@@ -195,6 +195,11 @@ function AppContent() {
         {activeTab === 'classroom' && (
           <VirtualClassroom
             course={currentCourse}
+            coursesList={coursesList}
+            onSelectCourse={(c) => {
+              setCurrentCourse(c);
+              setCurrentSlideIndex(0);
+            }}
             sessionCode={sessionCode}
             currentSlideIndex={currentSlideIndex}
             setCurrentSlideIndex={setCurrentSlideIndex}
@@ -208,7 +213,11 @@ function AppContent() {
         )}
 
         {activeTab === 'groups' && (
-          <GroupsDashboard />
+          <GroupsDashboard
+            onStartVisio={(grp) => {
+              setActiveTab('classroom');
+            }}
+          />
         )}
       </main>
 

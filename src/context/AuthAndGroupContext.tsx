@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { UserProfile, TrainingGroup, GroupMember, GroupRole } from '../types';
+import {
+  signInWithGoogle,
+  registerWithEmail,
+  loginWithEmail,
+  logoutFirebase,
+  updateFirestoreProfile,
+  isFirebaseConfigured,
+} from '../services/firebase';
 
 export const DEMO_PRESET_USERS: UserProfile[] = [
   {
@@ -42,6 +50,7 @@ interface AuthAndGroupContextType {
   currentUser: UserProfile | null;
   isAuthenticated: boolean;
   loginWithCredentials: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   registerUser: (userData: Partial<UserProfile>, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -118,7 +127,45 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, [activeGroupId]);
 
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    if (isFirebaseConfigured()) {
+      const result = await signInWithGoogle();
+      if (result.success && result.user) {
+        setCurrentUser(result.user);
+        await refreshGroups();
+        return { success: true };
+      }
+      return { success: false, error: result.error };
+    }
+
+    // Smart Fallback when Firebase config is not yet entered in .env
+    const demoGoogleUser: UserProfile = {
+      id: `google-user-${Date.now()}`,
+      name: 'Google Trainer',
+      email: 'trainer.google@example.com',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      title: 'Formateur Certifié Google',
+      bio: 'Authentifié avec Google OAuth.',
+      company: 'EduVibe AI Partner',
+      skills: ['Google Workspace', 'Pédagogie Interactive', 'IA Générative'],
+      joinedAt: new Date().toISOString().slice(0, 10),
+    };
+    setCurrentUser(demoGoogleUser);
+    await refreshGroups();
+    return { success: true };
+  };
+
   const loginWithCredentials = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (isFirebaseConfigured() && password) {
+      const fbRes = await loginWithEmail(email, password);
+      if (fbRes.success && fbRes.user) {
+        setCurrentUser(fbRes.user);
+        await refreshGroups();
+        return { success: true };
+      }
+    }
+
+    // Server Database Authentication
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -144,6 +191,20 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const registerUser = async (userData: Partial<UserProfile>, password?: string): Promise<{ success: boolean; error?: string }> => {
+    if (isFirebaseConfigured() && userData.email && password) {
+      const fbRes = await registerWithEmail(
+        userData.name || 'Formateur EduVibe',
+        userData.email,
+        password,
+        userData.title
+      );
+      if (fbRes.success && fbRes.user) {
+        setCurrentUser(fbRes.user);
+        await refreshGroups();
+        return { success: true };
+      }
+    }
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -163,12 +224,16 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const logout = () => {
+    logoutFirebase();
     setCurrentUser(null);
     setActiveGroupId(null);
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!currentUser) return;
+    if (isFirebaseConfigured()) {
+      await updateFirestoreProfile(currentUser.id, updates);
+    }
     try {
       const res = await fetch('/api/auth/profile', {
         method: 'PUT',
@@ -181,7 +246,6 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
         await refreshGroups();
       }
     } catch (err) {
-      // Local fallback
       setCurrentUser((prev) => (prev ? { ...prev, ...updates } : null));
     }
   };
@@ -318,6 +382,7 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
         currentUser,
         isAuthenticated: Boolean(currentUser),
         loginWithCredentials,
+        loginWithGoogle,
         registerUser,
         logout,
         updateProfile,

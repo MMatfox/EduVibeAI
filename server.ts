@@ -38,24 +38,47 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+function cleanJsonText(raw: string): string {
+  if (!raw) return '{}';
+  let cleaned = raw.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+  return cleaned.trim();
+}
+
+async function callGeminiWithRetry(ai: GoogleGenAI, params: any, maxRetries = 3) {
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await ai.models.generateContent(params);
+      return res;
+    } catch (err: any) {
+      lastErr = err;
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // Endpoint: Validate an API Key
 app.post('/api/check-api-key', async (req, res) => {
   try {
     const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
     const ai = getGeminiClient(customKey);
     if (!ai) {
-      return res.json({ valid: false, message: 'No API key provided or empty key.' });
+      return res.json({ valid: false, message: 'Aucune clé API fournie.' });
     }
-    const testResp = await ai.models.generateContent({
+    const testResp = await callGeminiWithRetry(ai, {
       model: 'gemini-3.7-flash',
       contents: 'Ping',
-    });
+    }, 2);
     if (testResp.text) {
-      return res.json({ valid: true, message: 'API key is valid and connected!' });
+      return res.json({ valid: true, message: 'Clé API valide et connectée à Google Gemini 3.7 !' });
     }
-    return res.json({ valid: false, message: 'No response from model.' });
+    return res.json({ valid: false, message: 'Pas de réponse du modèle.' });
   } catch (error: any) {
-    return res.json({ valid: false, message: error.message || 'Failed to connect with key.' });
+    return res.json({ valid: false, message: error.message || 'Échec de connexion.' });
   }
 });
 
@@ -305,94 +328,18 @@ Generate:
 
 Return valid JSON adhering to the schema.`;
 
-    const response = await ai.models.generateContent({
-      model: model || 'gemini-3.7-flash',
+    const response = await callGeminiWithRetry(ai, {
+      model: 'gemini-3.7-flash',
       contents: prompt,
       config: {
-        systemInstruction: `You are EduVibe AI, an expert corporate course designer. Always produce high quality instructional content in ${language}. Ensure tone is highly professional and actionable.`,
+        systemInstruction: `You are EduVibe AI, an expert corporate course designer. Always produce high quality instructional content in ${language}. Ensure tone is highly professional and actionable. Return valid JSON only.`,
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            tagline: { type: Type.STRING },
-            description: { type: Type.STRING },
-            estimatedDuration: { type: Type.INTEGER },
-            slides: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  slideNumber: { type: Type.INTEGER },
-                  title: { type: Type.STRING },
-                  subtitle: { type: Type.STRING },
-                  categoryBadge: { type: Type.STRING },
-                  bullets: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  visualConcept: {
-                    type: Type.OBJECT,
-                    properties: {
-                      type: { type: Type.STRING, description: "One of 'metric', 'framework', 'comparison', 'flow', 'takeaway', 'quote'" },
-                      title: { type: Type.STRING },
-                      badge: { type: Type.STRING },
-                      metric: { type: Type.STRING },
-                      metricLabel: { type: Type.STRING },
-                      details: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                      },
-                      leftTitle: { type: Type.STRING },
-                      leftPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      rightTitle: { type: Type.STRING },
-                      rightPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    },
-                    required: ['type', 'title', 'details'],
-                  },
-                  trainerNotes: {
-                    type: Type.OBJECT,
-                    properties: {
-                      timeMinutes: { type: Type.INTEGER },
-                      keyTalkingPoints: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                      },
-                      oralScript: { type: Type.STRING },
-                      interactivePrompt: { type: Type.STRING },
-                    },
-                    required: ['timeMinutes', 'keyTalkingPoints', 'oralScript', 'interactivePrompt'],
-                  },
-                },
-                required: ['slideNumber', 'title', 'subtitle', 'bullets', 'visualConcept', 'trainerNotes'],
-              },
-            },
-            quiz: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  options: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                  correctOptionIndex: { type: Type.INTEGER },
-                  explanation: { type: Type.STRING },
-                  difficulty: { type: Type.STRING },
-                  hint: { type: Type.STRING },
-                },
-                required: ['question', 'options', 'correctOptionIndex', 'explanation', 'difficulty', 'hint'],
-              },
-            },
-          },
-          required: ['title', 'tagline', 'description', 'slides', 'quiz'],
-        },
       },
-    });
+    }, 3);
 
     const rawText = response.text || '{}';
-    const parsedData = JSON.parse(rawText);
+    const cleanedText = cleanJsonText(rawText);
+    const parsedData = JSON.parse(cleanedText);
 
     const fullCourse = {
       id: 'gen-' + Date.now(),
@@ -491,15 +438,16 @@ Return a single JSON object with:
 - visualConcept: { type ('metric'|'framework'|'comparison'|'flow'|'takeaway'|'quote'), title, badge, details (2-3 lines), metric (optional), metricLabel (optional) }
 - trainerNotes: { timeMinutes, keyTalkingPoints (array of 3), oralScript (3-4 sentences), interactivePrompt }`;
 
-    const response = await ai.models.generateContent({
+    const response = await callGeminiWithRetry(ai, {
       model: 'gemini-3.7-flash',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
       },
-    });
+    }, 2);
 
-    const parsed = JSON.parse(response.text || '{}');
+    const cleaned = cleanJsonText(response.text || '{}');
+    const parsed = JSON.parse(cleaned);
     const slide = {
       ...parsed,
       id: `slide-${Date.now()}`,

@@ -18,13 +18,18 @@ import {
   ArrowRight,
   MoreVertical,
   X,
-  UserCheck
+  UserCheck,
+  Video
 } from 'lucide-react';
 import { useAuthAndGroup } from '../context/AuthAndGroupContext';
 import { TrainingGroup, GroupRole, GroupMember } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
-export const GroupsDashboard: React.FC = () => {
+interface GroupsDashboardProps {
+  onStartVisio?: (group: TrainingGroup) => void;
+}
+
+export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }) => {
   const {
     currentUser,
     userGroups,
@@ -261,6 +266,17 @@ export const GroupsDashboard: React.FC = () => {
 
               {/* Code & Link actions */}
               <div className="flex flex-wrap items-center gap-2">
+                {onStartVisio && (
+                  <button
+                    onClick={() => onStartVisio(activeGroup)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                    title="Lancer la visio et présenter les diapositives pour ce groupe"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Lancer la Visio du Groupe</span>
+                  </button>
+                )}
+
                 <button
                   onClick={handleCopyCode}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono font-bold border border-slate-200 transition cursor-pointer"

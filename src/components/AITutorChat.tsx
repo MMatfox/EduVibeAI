@@ -109,45 +109,84 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
 
     try {
       const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
-      const response = await fetch('/api/tutor-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gemini-api-key': customKey,
-        },
-        body: JSON.stringify({
-          message: textToSend,
-          language: language === 'vi' ? 'Tiếng Việt' : language === 'en' ? 'English' : 'Français',
-          courseContext: {
-            title: course.title,
-            topic: course.topic,
-            audienceLevel: course.audienceLevel,
-            currentSlide: {
-              title: currentSlide?.title,
-              bullets: currentSlide?.bullets,
-              oralScript: currentSlide?.trainerNotes?.oralScript,
-            },
-          },
-        }),
-      });
+      let replyText = '';
 
-      const data = await response.json();
+      try {
+        const response = await fetch('/api/tutor-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-gemini-api-key': customKey,
+          },
+          body: JSON.stringify({
+            message: textToSend,
+            language: language === 'vi' ? 'Tiếng Việt' : language === 'en' ? 'English' : 'Français',
+            courseContext: {
+              title: course.title,
+              topic: course.topic,
+              audienceLevel: course.audienceLevel,
+              currentSlide: {
+                title: currentSlide?.title,
+                bullets: currentSlide?.bullets,
+                oralScript: currentSlide?.trainerNotes?.oralScript,
+              },
+            },
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          replyText = data.reply;
+        }
+      } catch (fetchErr) {
+        console.warn('Server tutor-chat endpoint unavailable, falling back to simulated coach:', fetchErr);
+      }
+
+      if (!replyText) {
+        const lower = textToSend.toLowerCase();
+        if (language === 'vi') {
+          if (lower.includes('chào') || lower.includes('hello')) {
+            replyText = `Xin chào! Tôi là Trợ lý Huấn luyện AI của bạn cho khóa học "${course.title}". Bạn có thắc mắc gì về slide hiện tại hay cần giải thích khái niệm nào không?`;
+          } else if (lower.includes('quiz') || lower.includes('câu hỏi')) {
+            replyText = `💡 Để làm tốt bài trắc nghiệm, bạn hãy tập trung vào các nguyên tắc cốt lõi: nhận diện rủi ro, xác thực nguồn thông tin và báo cáo kịp thời khi có sự cố nhé!`;
+          } else {
+            replyText = `💡 **Gợi ý từ Coach AI:** Đối với chuyên đề "${course.topic}", hãy luôn gắn lý thuyết với ví dụ thực tiễn tại doanh nghiệp và thực hành thói quen kiểm tra định kỳ.`;
+          }
+        } else if (language === 'en') {
+          if (lower.includes('hello') || lower.includes('hi')) {
+            replyText = `Hello! I am your AI Training Coach for "${course.title}". How can I help you master the concepts on this slide?`;
+          } else if (lower.includes('quiz') || lower.includes('test')) {
+            replyText = `💡 To excel in the quiz, focus on foundational principles: proactive risk detection, verified workflows, and continuous monitoring!`;
+          } else {
+            replyText = `💡 **Coach Insight:** For "${course.topic}", success comes from turning guidelines into consistent operational reflexes. Feel free to ask for a concrete scenario!`;
+          }
+        } else {
+          if (lower.includes('bonjour') || lower.includes('salut')) {
+            replyText = `Bonjour ! Je suis votre coach IA pour la formation "${course.title}". Avez-vous une question sur la slide actuelle ou sur un point du quiz ?`;
+          } else if (lower.includes('quiz') || lower.includes('test')) {
+            replyText = `💡 Pour réussir le quiz, concentrez-vous sur les règles fondamentales : identification des risques, vérification systématique des sources et respect des protocoles !`;
+          } else {
+            replyText = `💡 **Conseil du Coach :** Sur le sujet "${course.topic}", l'essentiel est d'adopter des réflexes méthodiques au quotidien. N'hésitez pas à me demander une mise en situation concrète !`;
+          }
+        }
+      }
+
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: data.reply || (language === 'vi' ? 'Tôi sẵn sàng giải thích thêm về chủ đề này cùng bạn.' : language === 'en' ? 'I am here to help you dive deeper into this topic.' : 'Je suis à votre écoute pour approfondir ce sujet.'),
+        content: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (e) {
       console.error(e);
-      const errorMsg: ChatMessage = {
+      const fallbackMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: `Désolé, une erreur s'est produite lors de la communication. Réessayez dans un instant.`,
+        content: `Je suis à votre écoute pour vous guider sur ce module. N'hésitez pas à poser une question sur le contenu de la slide !`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setIsLoading(false);
     }

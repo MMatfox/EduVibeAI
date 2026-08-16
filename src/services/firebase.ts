@@ -2,6 +2,8 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
   getAuth,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -47,6 +49,9 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
 
 try {
   const config = getFirebaseConfig();
@@ -61,47 +66,123 @@ try {
 
 export { auth, db, googleProvider };
 
-// 1. Google Sign-In
-export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; error?: string }> => {
+/**
+ * Helper to get or create a user profile in Firestore
+ */
+export const ensureFirestoreUserProfile = async (fbUser: FirebaseUser): Promise<UserProfile> => {
+  if (!db) {
+    return {
+      id: fbUser.uid,
+      name: fbUser.displayName || 'Utilisateur Google',
+      email: fbUser.email || '',
+      avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      title: 'Formateur & Concepteur',
+      bio: 'Connecté avec un compte Google certifié sur EduVibe AI.',
+      company: 'EduVibe Solutions',
+      skills: ['Formation Interactive', 'Cybersécurité'],
+      joinedAt: new Date().toISOString().slice(0, 10),
+    };
+  }
+
+  const userRef = doc(db, 'users', fbUser.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    return userSnap.data() as UserProfile;
+  }
+
+  const profile: UserProfile = {
+    id: fbUser.uid,
+    name: fbUser.displayName || 'Utilisateur Google',
+    email: fbUser.email || '',
+    avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    title: 'Formateur & Concepteur',
+    bio: 'Connecté avec un compte Google certifié sur EduVibe AI.',
+    company: 'EduVibe Solutions',
+    skills: ['Formation Interactive', 'Cybersécurité'],
+    joinedAt: new Date().toISOString().slice(0, 10),
+  };
+
+  try {
+    await setDoc(userRef, profile);
+  } catch (err) {
+    console.warn('Could not persist profile in Firestore (permission/offline):', err);
+  }
+
+  return profile;
+};
+
+// 1. Google Sign-In with Popup and Automatic Redirect Fallback
+export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; redirecting?: boolean; error?: string }> => {
   if (!auth || !db) {
     return {
       success: false,
-      error: 'Firebase n’est pas encore configuré. Renseignez vos identifiants Firebase dans le fichier .env (voir instructions).',
+      error: 'Firebase n’est pas encore configuré. Renseignez vos identifiants Firebase dans le fichier .env ou les Paramètres.',
     };
   }
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    const fbUser = result.user;
-
-    // Check if user document already exists in Firestore
-    const userRef = doc(db, 'users', fbUser.uid);
-    const userSnap = await getDoc(userRef);
-
-    let profile: UserProfile;
-    if (userSnap.exists()) {
-      profile = userSnap.data() as UserProfile;
-    } else {
-      // Create new profile from Google Auth
-      profile = {
-        id: fbUser.uid,
-        name: fbUser.displayName || 'Utilisateur Google',
-        email: fbUser.email || '',
-        avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        title: 'Formateur & Concepteur',
-        bio: 'Connecté avec un compte Google certifié sur EduVibe AI.',
-        company: 'EduVibe Solutions',
-        skills: ['Formation Interactive', 'Cybersécurité'],
-        joinedAt: new Date().toISOString().slice(0, 10),
-      };
-      await setDoc(userRef, profile);
-    }
-
+    const profile = await ensureFirestoreUserProfile(result.user);
     return { success: true, user: profile };
   } catch (err: any) {
-    console.error('Google Auth error:', err);
-    return { success: false, error: err.message || 'Échec de la connexion Google' };
+    console.warn('Google Popup Auth error, attempting redirect fallback:', err);
+
+    // If popup is blocked by browser, automatically attempt redirect
+    if (
+      err.code === 'auth/popup-blocked' ||
+      err.code === 'auth/popup-closed-by-user' ||
+      err.code === 'auth/cancelled-popup-request'
+    ) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { success: true, redirecting: true };
+      } catch (redirectErr: any) {
+        console.error('Google Redirect Auth error:', redirectErr);
+        let msg = redirectErr.message;
+        if (redirectErr.code === 'auth/unauthorized-domain') {
+          msg = `Domaine non autorisé dans Firebase. Ajoutez "${window.location.hostname}" dans Firebase Console > Authentication > Paramètres > Domaines autorisés.`;
+        }
+        return { success: false, error: msg || 'La fenêtre de connexion a été bloquée par votre navigateur.' };
+      }
+    }
+
+    let errorMsg = err.message || 'Échec de la connexion Google';
+    if (err.code === 'auth/unauthorized-domain') {
+      errorMsg = `Domaine non autorisé dans Firebase. Ajoutez "${window.location.hostname}" dans Firebase Console > Authentication > Paramètres > Domaines autorisés.`;
+    }
+
+    return { success: false, error: errorMsg };
   }
+};
+
+/**
+ * Check for redirect result on page load
+ */
+export const checkRedirectResult = async (): Promise<UserProfile | null> => {
+  if (!auth) return null;
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      return await ensureFirestoreUserProfile(result.user);
+    }
+  } catch (error: any) {
+    console.warn('Redirect auth result check:', error);
+  }
+  return null;
+};
+
+/**
+ * Listen to Firebase Auth state changes
+ */
+export const subscribeToAuthState = (onUserChanged: (user: UserProfile | null) => void) => {
+  if (!auth) return () => {};
+  return onAuthStateChanged(auth, async (fbUser) => {
+    if (fbUser) {
+      const profile = await ensureFirestoreUserProfile(fbUser);
+      onUserChanged(profile);
+    }
+  });
 };
 
 // 2. Email & Password Sign Up

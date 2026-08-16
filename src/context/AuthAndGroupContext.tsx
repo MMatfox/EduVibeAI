@@ -7,6 +7,8 @@ import {
   logoutFirebase,
   updateFirestoreProfile,
   isFirebaseConfigured,
+  checkRedirectResult,
+  subscribeToAuthState,
 } from '../services/firebase';
 
 export const DEMO_PRESET_USERS: UserProfile[] = [
@@ -107,6 +109,24 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     refreshGroups();
+
+    if (isFirebaseConfigured()) {
+      checkRedirectResult()
+        .then((user) => {
+          if (user) {
+            setCurrentUser(user);
+            refreshGroups();
+          }
+        })
+        .catch(console.warn);
+
+      const unsubscribe = subscribeToAuthState((user) => {
+        if (user) {
+          setCurrentUser(user);
+        }
+      });
+      return () => unsubscribe();
+    }
   }, [refreshGroups]);
 
   // Persist session user
@@ -130,9 +150,11 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     if (isFirebaseConfigured()) {
       const result = await signInWithGoogle();
-      if (result.success && result.user) {
-        setCurrentUser(result.user);
-        await refreshGroups();
+      if (result.success) {
+        if (result.user) {
+          setCurrentUser(result.user);
+          await refreshGroups();
+        }
         return { success: true };
       }
       return { success: false, error: result.error };

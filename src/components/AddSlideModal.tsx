@@ -50,27 +50,76 @@ export const AddSlideModal: React.FC<AddSlideModalProps> = ({
     e.preventDefault();
     setIsGenerating(true);
 
+    const sub = subtopic.trim() || 'Pratiques recommandées & Étude de cas';
+    const langStr = language === 'vi' ? 'Tiếng Việt' : language === 'en' ? 'English' : 'Français';
+
     try {
       const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
-      const resp = await fetch('/api/generate-single-slide', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gemini-api-key': customKey,
-        },
-        body: JSON.stringify({
-          courseTopic,
-          subtopic: subtopic.trim() || 'Pratiques recommandées & Étude de cas',
-          slideNumber: nextSlideNumber,
-          language: language === 'vi' ? 'Tiếng Việt' : language === 'en' ? 'English' : 'Français',
-        }),
-      });
+      let slideToAdd: Slide | null = null;
 
-      const data = await resp.json();
-      if (data.slide) {
-        onAddSlide(data.slide);
-        onClose();
+      try {
+        const resp = await fetch('/api/generate-single-slide', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-gemini-api-key': customKey,
+          },
+          body: JSON.stringify({
+            courseTopic,
+            subtopic: sub,
+            slideNumber: nextSlideNumber,
+            language: langStr,
+          }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.slide) {
+            slideToAdd = data.slide;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Server slide generation endpoint failed, using client fallback:', fetchErr);
       }
+
+      // Fallback slide generation
+      if (!slideToAdd) {
+        slideToAdd = {
+          id: `slide-${nextSlideNumber}-${Date.now()}`,
+          slideNumber: nextSlideNumber,
+          title: language === 'vi' ? `Chuyên Đề: ${sub}` : language === 'en' ? `Deep Dive: ${sub}` : `Focus Approfondi : ${sub}`,
+          subtitle: language === 'vi' ? `Áp dụng thực tiễn trong khuôn khổ ${courseTopic}` : language === 'en' ? `Practical insights related to ${courseTopic}` : `Application concrète dans le cadre de ${courseTopic}`,
+          categoryBadge: 'Focus Thématique',
+          bullets: [
+            language === 'vi' ? `Phân tích chi tiết quy trình thực thi cho ${sub}.` : language === 'en' ? `Detailed operational workflow for ${sub}.` : `Analyse détaillée du flux opérationnel pour ${sub}.`,
+            language === 'vi' ? `Các biện pháp kiểm soát và hạn chế rủi ro trọng yếu.` : language === 'en' ? `Key mitigation levers and compliance controls.` : `Leviers de maîtrise des risques et contrôles clés.`,
+            language === 'vi' ? `Thực hành theo checklist và chuẩn mực ngành.` : language === 'en' ? `Application according to standard checklists.` : `Mise en application selon la grille méthodologique standard.`,
+          ],
+          visualConcept: {
+            type: 'framework',
+            title: `Mécanisme : ${sub}`,
+            badge: 'PROCESSUS',
+            details: [
+              'Étape 1 : Diagnostic & Identification',
+              'Étape 2 : Traitement & Sécurisation',
+              'Étape 3 : Validation & Capitalisation'
+            ],
+          },
+          trainerNotes: {
+            timeMinutes: 8,
+            keyTalkingPoints: [
+              `Présenter les enjeux concrets de ${sub}.`,
+              `Illustrer par un retour d'expérience opérationnel.`,
+              `Engager les participants avec une question ouverte.`
+            ],
+            oralScript: `Dans cette slide d'approfondissement, nous nous concentrons sur ${sub}. Ce point constitue souvent le facteur clé de succès dans la mise en pratique quotidienne de ${courseTopic}.`,
+            interactivePrompt: `Selon votre expérience, quel est le principal frein à l'application de ce principe ?`
+          }
+        };
+      }
+
+      onAddSlide(slideToAdd);
+      onClose();
     } catch (err) {
       console.error(err);
       alert('Erreur lors de la génération de la slide.');

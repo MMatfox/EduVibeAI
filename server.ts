@@ -864,4 +864,12 @@ async function startServer() {
   });
 }
 
-startServer();
+// Export app for Vercel serverless functions / tests
+export { app };
+export default app;
+
+// Start server only when running standalone (not inside Vercel serverless handler)
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+

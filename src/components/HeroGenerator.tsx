@@ -22,6 +22,7 @@ import {
   INDUSTRIES_BY_LANG,
 } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
+import { generateSmartFallbackCourse, generateCourseWithClientGemini } from '../utils/courseGenerator';
 
 interface HeroGeneratorProps {
   onCourseGenerated: (course: CoursePayload) => void;
@@ -101,36 +102,95 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
       const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
       const customModel = localStorage.getItem('eduvibe_gemini_model') || 'gemini-3.7-flash';
 
-      const response = await fetch('/api/generate-course', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-gemini-api-key': customKey,
-        },
-        body: JSON.stringify({
-          topic,
-          audienceLevel,
-          slideCount,
-          language: moduleLang,
-          industry,
-          themeId: selectedTheme,
-          model: customModel,
-        }),
-      });
+      let generatedCourse: CoursePayload | null = null;
+      let isFallbackResult = false;
+      let noticeMsg = '';
 
-      const data = await response.json();
+      // 1. Try server API endpoint
+      try {
+        const response = await fetch('/api/generate-course', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-gemini-api-key': customKey,
+          },
+          body: JSON.stringify({
+            topic,
+            audienceLevel,
+            slideCount,
+            language: moduleLang,
+            industry,
+            themeId: selectedTheme,
+            model: customModel,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.course) {
+            generatedCourse = data.course;
+            isFallbackResult = Boolean(data.isFallback);
+            noticeMsg = data.errorNotice || '';
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Server endpoint /api/generate-course unavailable or error, using client generator:', fetchErr);
+      }
+
+      // 2. Client-side generator fallback if server was unavailable / static deployment
+      if (!generatedCourse) {
+        if (customKey) {
+          try {
+            // Direct browser call to Gemini if API key is provided
+            generatedCourse = await generateCourseWithClientGemini(customKey, {
+              topic,
+              audienceLevel,
+              slideCount,
+              language: moduleLang,
+              industry,
+              themeId: selectedTheme,
+              model: customModel,
+            });
+            isFallbackResult = false;
+          } catch (geminiClientErr: any) {
+            console.warn('Client Gemini call failed, using client smart fallback:', geminiClientErr);
+            generatedCourse = generateSmartFallbackCourse(
+              topic,
+              audienceLevel,
+              slideCount,
+              moduleLang,
+              industry,
+              selectedTheme
+            );
+            isFallbackResult = true;
+            noticeMsg = geminiClientErr?.message;
+          }
+        } else {
+          // Smart offline generator
+          generatedCourse = generateSmartFallbackCourse(
+            topic,
+            audienceLevel,
+            slideCount,
+            moduleLang,
+            industry,
+            selectedTheme
+          );
+          isFallbackResult = true;
+        }
+      }
+
       clearInterval(interval);
 
-      if (data.course) {
-        onCourseGenerated(data.course);
+      if (generatedCourse) {
+        onCourseGenerated(generatedCourse);
         setStatusMessage({
           type: 'success',
-          text: data.isFallback
-            ? (data.errorNotice ? `${t('generator.generatedSuccessFallback')} (${data.errorNotice})` : t('generator.generatedSuccessFallback'))
+          text: isFallbackResult
+            ? (noticeMsg ? `${t('generator.generatedSuccessFallback')} (${noticeMsg})` : t('generator.generatedSuccessFallback'))
             : t('generator.generatedSuccessGemini'),
         });
       } else {
-        throw new Error(data.error || 'Generation failed');
+        throw new Error('Course generation could not be completed.');
       }
     } catch (err: any) {
       clearInterval(interval);

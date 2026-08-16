@@ -13,7 +13,7 @@ interface DatabaseSchema {
   courses: CoursePayload[];
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const DB_DIR = process.env.VERCEL ? '/tmp/eduvibe' : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'eduvibe_db.json');
 
 const INITIAL_USERS: StoredUser[] = [

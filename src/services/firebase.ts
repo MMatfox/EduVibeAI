@@ -106,9 +106,9 @@ export const ensureFirestoreUserProfile = async (fbUser: FirebaseUser): Promise<
   return fallbackProfile;
 };
 
-// 1. Google Sign-In with Popup and Automatic Redirect Fallback
-export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; redirecting?: boolean; error?: string }> => {
-  if (!auth || !db) {
+// 1. Google Sign-In via Popup (direct, clean, works on all custom domains)
+export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; error?: string }> => {
+  if (!auth) {
     return {
       success: false,
       error: 'Firebase n’est pas encore configuré. Renseignez vos identifiants Firebase dans le fichier .env ou les Paramètres.',
@@ -118,31 +118,19 @@ export const signInWithGoogle = async (): Promise<{ success: boolean; user?: Use
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const profile = await ensureFirestoreUserProfile(result.user);
+    try {
+      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
+    } catch {}
     return { success: true, user: profile };
   } catch (err: any) {
-    console.warn('Google Popup Auth error, attempting redirect fallback:', err);
-
-    // If popup is blocked by browser, automatically attempt redirect
-    if (
-      err.code === 'auth/popup-blocked' ||
-      err.code === 'auth/popup-closed-by-user' ||
-      err.code === 'auth/cancelled-popup-request'
-    ) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return { success: true, redirecting: true };
-      } catch (redirectErr: any) {
-        console.error('Google Redirect Auth error:', redirectErr);
-        let msg = redirectErr.message;
-        if (redirectErr.code === 'auth/unauthorized-domain') {
-          msg = `Domaine non autorisé dans Firebase. Ajoutez "${window.location.hostname}" dans Firebase Console > Authentication > Paramètres > Domaines autorisés.`;
-        }
-        return { success: false, error: msg || 'La fenêtre de connexion a été bloquée par votre navigateur.' };
-      }
-    }
+    console.warn('Google Popup Auth error:', err);
 
     let errorMsg = err.message || 'Échec de la connexion Google';
-    if (err.code === 'auth/unauthorized-domain') {
+    if (err.code === 'auth/popup-blocked') {
+      errorMsg = 'La fenêtre de connexion a été bloquée par votre navigateur. Autorisez les fenêtres pop-up pour ce site dans votre navigateur et réessayez.';
+    } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      errorMsg = 'Connexion Google annulée (fenêtre fermée).';
+    } else if (err.code === 'auth/unauthorized-domain') {
       errorMsg = `Domaine non autorisé dans Firebase. Ajoutez "${window.location.hostname}" dans Firebase Console > Authentication > Paramètres > Domaines autorisés.`;
     }
 
@@ -158,7 +146,11 @@ export const checkRedirectResult = async (): Promise<UserProfile | null> => {
   try {
     const result = await getRedirectResult(auth);
     if (result && result.user) {
-      return await ensureFirestoreUserProfile(result.user);
+      const profile = await ensureFirestoreUserProfile(result.user);
+      try {
+        localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
+      } catch {}
+      return profile;
     }
   } catch (error: any) {
     console.warn('Redirect auth result check:', error);
@@ -174,6 +166,9 @@ export const subscribeToAuthState = (onUserChanged: (user: UserProfile | null) =
   return onAuthStateChanged(auth, async (fbUser) => {
     if (fbUser) {
       const profile = await ensureFirestoreUserProfile(fbUser);
+      try {
+        localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
+      } catch {}
       onUserChanged(profile);
     }
   });
@@ -186,10 +181,10 @@ export const registerWithEmail = async (
   pass: string,
   title?: string
 ): Promise<{ success: boolean; user?: UserProfile; error?: string }> => {
-  if (!auth || !db) {
+  if (!auth) {
     return {
       success: false,
-      error: 'Firebase non configuré. Veuillez compléter les clés VITE_FIREBASE_* dans votre .env.',
+      error: 'Firebase non configuré.',
     };
   }
 
@@ -207,7 +202,18 @@ export const registerWithEmail = async (
       joinedAt: new Date().toISOString().slice(0, 10),
     };
 
-    await setDoc(doc(db, 'users', res.user.uid), profile);
+    if (db) {
+      try {
+        await setDoc(doc(db, 'users', res.user.uid), profile);
+      } catch (err) {
+        console.warn('Could not persist profile in Firestore:', err);
+      }
+    }
+
+    try {
+      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
+    } catch {}
+
     return { success: true, user: profile };
   } catch (err: any) {
     console.error('Firebase Register error:', err);
@@ -223,7 +229,7 @@ export const loginWithEmail = async (
   email: string,
   pass: string
 ): Promise<{ success: boolean; user?: UserProfile; error?: string }> => {
-  if (!auth || !db) {
+  if (!auth) {
     return {
       success: false,
       error: 'Firebase non configuré.',
@@ -232,11 +238,7 @@ export const loginWithEmail = async (
 
   try {
     const res = await signInWithEmailAndPassword(auth, email.trim(), pass);
-    const userSnap = await getDoc(doc(db, 'users', res.user.uid));
-    if (userSnap.exists()) {
-      return { success: true, user: userSnap.data() as UserProfile };
-    }
-    const fallbackProfile: UserProfile = {
+    let profile: UserProfile = {
       id: res.user.uid,
       name: res.user.displayName || email.split('@')[0],
       email: res.user.email || email,
@@ -246,7 +248,23 @@ export const loginWithEmail = async (
       skills: ['Formation'],
       joinedAt: new Date().toISOString().slice(0, 10),
     };
-    return { success: true, user: fallbackProfile };
+
+    if (db) {
+      try {
+        const userSnap = await getDoc(doc(db, 'users', res.user.uid));
+        if (userSnap.exists()) {
+          profile = userSnap.data() as UserProfile;
+        }
+      } catch (err) {
+        console.warn('Could not read user profile from Firestore:', err);
+      }
+    }
+
+    try {
+      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
+    } catch {}
+
+    return { success: true, user: profile };
   } catch (err: any) {
     let msg = err.message;
     if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -259,8 +277,15 @@ export const loginWithEmail = async (
 // 4. Logout
 export const logoutFirebase = async (): Promise<void> => {
   if (auth) {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn('SignOut error:', e);
+    }
   }
+  try {
+    localStorage.removeItem('eduvibe_auth_session_user');
+  } catch {}
 };
 
 // 5. Update Profile in Firestore

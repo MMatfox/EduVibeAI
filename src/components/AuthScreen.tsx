@@ -185,18 +185,42 @@ export const AuthScreen: React.FC = () => {
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-2 animate-in fade-in">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" />
-                <span className="leading-relaxed">{errorMsg}</span>
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3 animate-in fade-in">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
+                <div className="space-y-1">
+                  {errorMsg === 'popup-blocked' ? (
+                    <>
+                      <p className="font-bold text-amber-300 text-sm">
+                        Fenêtre pop-up Google bloquée par votre navigateur
+                      </p>
+                      <p className="text-amber-200/90 leading-relaxed text-[11px]">
+                        1. Regardez tout à droite de votre barre d’adresse URL (icône avec une croix rouge 🚫).
+                        <br />
+                        2. Cliquez dessus et choisissez <strong>« Toujours autoriser les pop-ups pour ce site »</strong>.
+                        <br />
+                        3. Cliquez sur le bouton Réessayer ci-dessous.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="leading-relaxed">{errorMsg}</p>
+                  )}
+                </div>
               </div>
-              <div className="pt-1 flex items-center gap-2">
+              <div className="pt-1 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => loginAsGuest('Formateur Google')}
-                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-semibold text-[11px] border border-rose-500/30 transition cursor-pointer"
+                  onClick={handleGoogleAuth}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-sm transition cursor-pointer flex items-center gap-1.5"
                 >
-                  Continuer en Mode Démo Immédiat
+                  🔄 Réessayer la connexion Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() => loginAsGuest('Formateur Invité')}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition cursor-pointer"
+                >
+                  Accéder en mode Invité
                 </button>
               </div>
             </div>

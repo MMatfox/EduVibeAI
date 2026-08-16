@@ -106,51 +106,67 @@ export const ensureFirestoreUserProfile = async (fbUser: FirebaseUser): Promise<
   return fallbackProfile;
 };
 
-// 1. Google Sign-In (Direct Popup with 100% Guaranteed Instant Fallback)
-export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; error?: string }> => {
-  const fallbackGoogleUser: UserProfile = {
-    id: `google-${Date.now()}`,
-    name: 'Formateur Google',
-    email: 'trainer.google@eduvibe.ai',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    title: 'Formateur & Concepteur Certifié Google',
-    bio: 'Connecté avec un compte certifié sur la plateforme EduVibe AI.',
-    company: 'EduVibe Solutions',
-    skills: ['Formation Interactive', 'Cybersécurité', 'Prompt Engineering'],
-    joinedAt: new Date().toISOString().slice(0, 10),
-  };
-
+// 1. Google Sign-In with Real Google Account OAuth
+export const signInWithGoogle = async (): Promise<{ success: boolean; user?: UserProfile; error?: string; code?: string }> => {
   if (!auth) {
-    try {
-      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(fallbackGoogleUser));
-    } catch {}
-    return { success: true, user: fallbackGoogleUser };
+    return {
+      success: false,
+      error: 'Firebase non configuré. Veuillez vérifier les identifiants Firebase dans le fichier .env.',
+    };
   }
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    const profile = await ensureFirestoreUserProfile(result.user);
-    try {
-      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(profile));
-    } catch {}
-    return { success: true, user: profile };
-  } catch (err: any) {
-    console.warn('Google Popup Auth intercepted or closed, granting seamless session:', err);
+    const fbUser = result.user;
 
-    // If popup was closed intentionally by user, let them stay or log in
-    if (err.code === 'auth/popup-closed-by-user') {
-      // Return fallback so they can still proceed seamlessly
+    const realGoogleProfile: UserProfile = {
+      id: fbUser.uid,
+      name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Utilisateur Google',
+      email: fbUser.email || '',
+      avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      title: 'Formateur & Concepteur',
+      bio: 'Connecté avec un compte Google certifié sur EduVibe AI.',
+      company: 'EduVibe Solutions',
+      skills: ['Formation Interactive', 'Cybersécurité', 'Pédagogie'],
+      joinedAt: new Date().toISOString().slice(0, 10),
+    };
+
+    if (db) {
       try {
-        localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(fallbackGoogleUser));
-      } catch {}
-      return { success: true, user: fallbackGoogleUser };
+        const userRef = doc(db, 'users', fbUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const existing = userSnap.data() as UserProfile;
+          realGoogleProfile.title = existing.title || realGoogleProfile.title;
+          realGoogleProfile.bio = existing.bio || realGoogleProfile.bio;
+          realGoogleProfile.company = existing.company || realGoogleProfile.company;
+          realGoogleProfile.skills = existing.skills || realGoogleProfile.skills;
+        } else {
+          await setDoc(userRef, realGoogleProfile);
+        }
+      } catch (err) {
+        console.warn('Firestore profile sync error (ignored):', err);
+      }
     }
 
-    // On popup-blocked or domain authorization lag, log in instantly with fallback profile
     try {
-      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(fallbackGoogleUser));
+      localStorage.setItem('eduvibe_auth_session_user', JSON.stringify(realGoogleProfile));
     } catch {}
-    return { success: true, user: fallbackGoogleUser };
+
+    return { success: true, user: realGoogleProfile };
+  } catch (err: any) {
+    console.error('Google Popup Auth error:', err);
+
+    let errorMsg = err.message || 'Échec de la connexion Google';
+    if (err.code === 'auth/popup-blocked') {
+      errorMsg = 'popup-blocked';
+    } else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+      errorMsg = 'Connexion Google annulée (la fenêtre a été fermée).';
+    } else if (err.code === 'auth/unauthorized-domain') {
+      errorMsg = `Le domaine "${window.location.hostname}" n'est pas autorisé dans Firebase Console > Authentication > Paramètres > Domaines autorisés.`;
+    }
+
+    return { success: false, error: errorMsg, code: err.code };
   }
 };
 

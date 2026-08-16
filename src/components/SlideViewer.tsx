@@ -22,11 +22,17 @@ import {
   RotateCcw,
   Plus,
   Trash2,
-  Save
+  Save,
+  ArrowUp,
+  ArrowDown,
+  Tv
 } from 'lucide-react';
 import { CoursePayload, Slide } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
+import { PresentationMode } from './PresentationMode';
+import { AddSlideModal } from './AddSlideModal';
+import { audioEffects } from '../utils/audioEffects';
 
 interface SlideViewerProps {
   course: CoursePayload;
@@ -53,6 +59,10 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   const [isEnhancingWithAI, setIsEnhancingWithAI] = useState<boolean>(false);
   const [trainerTimerSeconds, setTrainerTimerSeconds] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+
+  // Presentation & Add slide modals
+  const [isPresentationModeOpen, setIsPresentationModeOpen] = useState<boolean>(false);
+  const [isAddSlideModalOpen, setIsAddSlideModalOpen] = useState<boolean>(false);
 
   // Current Slide
   const slides = course.slides || [];
@@ -89,6 +99,8 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
         handlePrev();
       } else if (e.key.toLowerCase() === 'n') {
         setShowTrainerNotes((prev) => !prev);
+      } else if (e.key.toLowerCase() === 'p') {
+        setIsPresentationModeOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -115,6 +127,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   const handleNext = () => {
     if (currentSlideIndex < slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
+      audioEffects.playSlideClick();
       stopSpeech();
     }
   };
@@ -122,6 +135,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   const handlePrev = () => {
     if (currentSlideIndex > 0) {
       setCurrentSlideIndex(currentSlideIndex - 1);
+      audioEffects.playSlideClick();
       stopSpeech();
     }
   };
@@ -157,8 +171,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    
-    // Choose speech synthesis language correctly based on current language or course language
+
     const courseLangLower = (course.language || '').toLowerCase();
     if (courseLangLower.includes('vi') || language === 'vi') {
       utterance.lang = 'vi-VN';
@@ -205,9 +218,13 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   const handleEnhanceWithAI = async () => {
     setIsEnhancingWithAI(true);
     try {
+      const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
       const response = await fetch('/api/enhance-slide', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gemini-api-key': customKey,
+        },
         body: JSON.stringify({
           slide: currentSlide,
           language: course.language,
@@ -233,6 +250,61 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
     }
   };
 
+  // Add Slide
+  const handleAddSlide = (newSlide: Slide) => {
+    const updated = [...slides, newSlide];
+    onUpdateCourse({
+      ...course,
+      slides: updated,
+    });
+    setCurrentSlideIndex(updated.length - 1);
+  };
+
+  // Delete Slide
+  const handleDeleteSlide = () => {
+    if (slides.length <= 1) {
+      alert('Un module doit comporter au moins 1 diapositive.');
+      return;
+    }
+    if (confirm(`Supprimer la slide "${currentSlide.title}" ?`)) {
+      const updated = slides
+        .filter((_, idx) => idx !== currentSlideIndex)
+        .map((s, idx) => ({ ...s, slideNumber: idx + 1 }));
+
+      onUpdateCourse({
+        ...course,
+        slides: updated,
+      });
+      setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+    }
+  };
+
+  // Move Slide Up
+  const handleMoveUp = () => {
+    if (currentSlideIndex <= 0) return;
+    const copy = [...slides];
+    const temp = copy[currentSlideIndex];
+    copy[currentSlideIndex] = copy[currentSlideIndex - 1];
+    copy[currentSlideIndex - 1] = temp;
+
+    const renumbered = copy.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+    onUpdateCourse({ ...course, slides: renumbered });
+    setCurrentSlideIndex(currentSlideIndex - 1);
+  };
+
+  // Move Slide Down
+  const handleMoveDown = () => {
+    if (currentSlideIndex >= slides.length - 1) return;
+    const copy = [...slides];
+    const temp = copy[currentSlideIndex];
+    copy[currentSlideIndex] = copy[currentSlideIndex + 1];
+    copy[currentSlideIndex + 1] = temp;
+
+    const renumbered = copy.map((s, i) => ({ ...s, slideNumber: i + 1 }));
+    onUpdateCourse({ ...course, slides: renumbered });
+    setCurrentSlideIndex(currentSlideIndex + 1);
+  };
+
   if (!currentSlide) {
     return (
       <div className="p-8 text-center text-slate-400">
@@ -243,6 +315,25 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 py-4 px-4 sm:px-6">
+      {/* Fullscreen Presentation Mode Modal */}
+      {isPresentationModeOpen && (
+        <PresentationMode
+          course={course}
+          currentSlideIndex={currentSlideIndex}
+          onSlideChange={setCurrentSlideIndex}
+          onExit={() => setIsPresentationModeOpen(false)}
+        />
+      )}
+
+      {/* Add Slide Modal */}
+      <AddSlideModal
+        isOpen={isAddSlideModalOpen}
+        onClose={() => setIsAddSlideModalOpen(false)}
+        courseTopic={course.topic}
+        nextSlideNumber={slides.length + 1}
+        onAddSlide={handleAddSlide}
+      />
+
       {/* Top Presentation Bar & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
         {/* Slide Counter & Progress */}
@@ -271,8 +362,19 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
           />
         </div>
 
-        {/* Right Actions: Timer, PPTX Export, Edit Slide */}
+        {/* Right Actions: Presentation Mode, Timer, Edit Slide, PPTX Export */}
         <div className="flex items-center gap-2">
+          {/* Launch Fullscreen Presentation Mode */}
+          <button
+            id="btn-presentation-mode"
+            onClick={() => setIsPresentationModeOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            title="Diaporama plein écran pour le direct (Touche P)"
+          >
+            <Tv className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">Diaporama (P)</span>
+          </button>
+
           {/* Trainer Timer */}
           <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200 text-xs font-mono text-slate-700">
             <Clock className="w-3.5 h-3.5 text-indigo-600" />
@@ -299,7 +401,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
           <button
             id="btn-edit-slide"
             onClick={() => setIsEditingSlide(!isEditingSlide)}
-            className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition ${
+            className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
               isEditingSlide
                 ? 'bg-amber-50 text-amber-800 border-amber-300'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -315,7 +417,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
             id="btn-slideviewer-pptx-export"
             onClick={onExportPPTX}
             disabled={isExporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50 transition cursor-pointer"
             title="Download PPTX"
           >
             <Download className={`w-3.5 h-3.5 ${isExporting ? 'animate-bounce' : ''}`} />
@@ -343,9 +445,36 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
               >
                 {currentSlide.categoryBadge || 'Slide'}
               </span>
-              <span className="text-xs text-slate-400 font-mono font-medium">
-                Slide {currentSlide.slideNumber} / {slides.length}
-              </span>
+              <div className="flex items-center gap-2">
+                {/* Slide reordering buttons */}
+                <button
+                  onClick={handleMoveUp}
+                  disabled={currentSlideIndex === 0}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
+                  title="Déplacer vers la gauche / avant"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleMoveDown}
+                  disabled={currentSlideIndex === slides.length - 1}
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
+                  title="Déplacer vers la droite / après"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleDeleteSlide}
+                  disabled={slides.length <= 1}
+                  className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30 cursor-pointer ml-1"
+                  title="Supprimer cette diapositive"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs text-slate-400 font-mono font-medium ml-2">
+                  Slide {currentSlide.slideNumber} / {slides.length}
+                </span>
+              </div>
             </div>
 
             {isEditingSlide ? (
@@ -388,7 +517,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                 </h3>
                 {isEditingSlide && (
                   <button
-                    onClick={() => setEditBullets([...editBullets, 'New point'])}
+                    onClick={() => setEditBullets([...editBullets, 'Nouveau point clé'])}
                     className="text-[11px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-semibold cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> {t('slides.addPoint')}
@@ -448,157 +577,169 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                     className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md text-white shadow-xs bg-indigo-600"
                     style={{ backgroundColor: theme.primaryColor || '#4f46e5' }}
                   >
-                    {currentSlide.visualConcept.badge || currentSlide.visualConcept.type.toUpperCase()}
+                    {currentSlide.visualConcept?.badge || currentSlide.visualConcept?.type?.toUpperCase()}
                   </span>
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <div className="text-slate-400">
+                    {currentSlide.visualConcept?.type === 'metric' && <TrendingUp className="w-4 h-4" />}
+                    {currentSlide.visualConcept?.type === 'comparison' && <Columns className="w-4 h-4" />}
+                    {currentSlide.visualConcept?.type === 'framework' && <Workflow className="w-4 h-4" />}
+                    {currentSlide.visualConcept?.type === 'quote' && <Quote className="w-4 h-4" />}
+                  </div>
                 </div>
 
-                {/* Main Concept Graphic / Metric Display */}
-                <div className="space-y-2 text-center py-2">
-                  <h4 className="text-sm font-bold text-slate-900 tracking-tight">
-                    {currentSlide.visualConcept.title}
+                {/* Concept Main Visual Graphic */}
+                <div className="space-y-3 my-auto py-2 text-center">
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {currentSlide.visualConcept?.title}
                   </h4>
 
-                  {currentSlide.visualConcept.metric && (
-                    <div className="space-y-1 py-1">
+                  {/* Metric Display if type == metric */}
+                  {currentSlide.visualConcept?.metric && (
+                    <div className="space-y-1">
                       <div
-                        className="text-4xl sm:text-5xl font-black tracking-tight text-indigo-600"
+                        className="text-4xl sm:text-5xl font-extrabold tracking-tight text-indigo-600"
                         style={{ color: theme.primaryColor || '#4f46e5' }}
                       >
                         {currentSlide.visualConcept.metric}
                       </div>
                       {currentSlide.visualConcept.metricLabel && (
-                        <p className="text-[11px] text-slate-600 font-medium max-w-xs mx-auto">
+                        <p className="text-xs text-slate-500 font-medium">
                           {currentSlide.visualConcept.metricLabel}
                         </p>
                       )}
                     </div>
                   )}
+
+                  {/* Details Bullet List */}
+                  {currentSlide.visualConcept?.details && currentSlide.visualConcept.details.length > 0 && (
+                    <div className="space-y-2 text-left pt-2 border-t border-slate-200/80">
+                      {currentSlide.visualConcept.details.map((detail, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-600"
+                            style={{ backgroundColor: theme.primaryColor || '#4f46e5' }}
+                          />
+                          <span>{detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Details / 3 Pillars */}
-                {currentSlide.visualConcept.details && (
-                  <div className="space-y-2 bg-white rounded-xl p-3 border border-slate-200 text-left shadow-xs">
-                    {currentSlide.visualConcept.details.map((detail, dIdx) => (
-                      <div key={dIdx} className="flex items-start gap-2 text-xs text-slate-700">
-                        <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-indigo-600" />
-                        <span>{detail}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* Footer Tag */}
+                <div className="text-[10px] text-slate-400 font-mono text-right">
+                  EduVibe Visual Concept Engine
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Edit Slide Save / Cancel Actions */}
+          {/* Edit Mode Save Button */}
           {isEditingSlide && (
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
               <button
                 onClick={() => setIsEditingSlide(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
               >
-                {t('slides.cancelEdit')}
+                Annuler
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 shadow-xs"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
-                {t('slides.saveChanges')}
+                <span>Enregistrer la slide</span>
               </button>
             </div>
           )}
+        </div>
 
-          {/* Presentation Footer & Next/Prev Controls */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-            {/* Toggle Notes Button */}
+        {/* Floating Slide Navigation Controls (Prev / Next) */}
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
+          <button
+            id="btn-prev-slide"
+            onClick={handlePrev}
+            disabled={currentSlideIndex === 0}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-40 transition cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>{t('viewer.prevSlide')}</span>
+          </button>
+
+          <div className="flex items-center gap-2">
             <button
-              id="btn-toggle-speaker-notes"
+              onClick={() => setIsAddSlideModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-indigo-700 hover:bg-indigo-50/50 transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{t('slides.addSlideBtn')}</span>
+            </button>
+
+            <button
+              id="btn-toggle-trainer-notes"
               onClick={() => setShowTrainerNotes(!showTrainerNotes)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer ${
                 showTrainerNotes
-                  ? 'bg-amber-50 border-amber-300 text-amber-800'
-                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>{showTrainerNotes ? t('slides.hideSpeakerNotes') : t('slides.showSpeakerNotes')}</span>
+              <span>{showTrainerNotes ? t('viewer.hideNotes') : t('viewer.showNotes')}</span>
             </button>
-
-            {/* Navigation Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                id="btn-prev-slide"
-                onClick={handlePrev}
-                disabled={currentSlideIndex === 0}
-                className="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200 transition shadow-xs"
-                title={t('slides.prev')}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-
-              <button
-                id="btn-next-slide"
-                onClick={handleNext}
-                disabled={currentSlideIndex === slides.length - 1}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-xs disabled:opacity-30 disabled:cursor-not-allowed transition"
-                title={t('slides.next')}
-              >
-                <span>{t('slides.next')}</span>
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
           </div>
+
+          <button
+            id="btn-next-slide"
+            onClick={handleNext}
+            disabled={currentSlideIndex === slides.length - 1}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-40 transition cursor-pointer shadow-xs"
+          >
+            <span>{t('viewer.nextSlide')}</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* COLLAPSIBLE SPEAKER NOTES & ORAL SCRIPT DRAWER */}
+      {/* COLLAPSIBLE TRAINER NOTES & ORAL SCRIPT DRAWER */}
       {showTrainerNotes && (
-        <div className="bg-amber-50/70 rounded-2xl border border-amber-200 p-6 shadow-xs space-y-5 animate-in fade-in slide-in-from-top-2">
-          {/* Header of Speaker Drawer */}
+        <div className="bg-amber-50/80 rounded-2xl border border-amber-200 p-5 sm:p-6 space-y-4 animate-in fade-in slide-in-from-top-3">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200/80 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-800">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-amber-200 text-amber-900">
                 <MessageSquare className="w-4 h-4" />
-              </div>
+              </span>
               <div>
-                <h3 className="text-sm font-bold text-amber-950">
-                  {t('slides.speakerNotesTitle')}
+                <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                  {t('slides.speakerNotesHeader')}
                 </h3>
                 <p className="text-[11px] text-amber-800">
-                  {t('slides.speakerNotesSubtitle')}
+                  {t('slides.rehearsalGuide')} • ~{currentSlide.trainerNotes?.timeMinutes || 8} min
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Timing cue badge */}
-              <span className="text-xs px-2.5 py-1 rounded-full bg-white text-amber-900 border border-amber-200 font-mono font-semibold flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-700" />
-                <span>{t('slides.targetDuration')}: ~{currentSlide.trainerNotes?.timeMinutes || 8} min</span>
-              </span>
-
-              {/* Read Aloud Audio Rehearsal */}
+              {/* Audio Speech Synthesis rehearsal */}
               <button
-                id="btn-speak-script"
+                id="btn-speech-rehearsal"
                 onClick={toggleSpeech}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-semibold transition ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-semibold transition cursor-pointer ${
                   isSpeaking
-                    ? 'bg-red-600 text-white border-red-500 animate-pulse'
+                    ? 'bg-amber-600 text-white border-amber-600 animate-pulse'
                     : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100/60'
                 }`}
-                title="Audio speech rehearsal"
+                title="Listen to oral script"
               >
-                {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-amber-700" />}
-                <span>{isSpeaking ? t('slides.stopAudio') : t('slides.rehearseAudio')}</span>
+                {isSpeaking ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                <span>{isSpeaking ? t('slides.speaking') : t('slides.listenScript')}</span>
               </button>
 
-              {/* Copy Script Button */}
+              {/* Copy Script */}
               <button
-                id="btn-copy-trainer-script"
+                id="btn-copy-script"
                 onClick={handleCopyScript}
-                className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white hover:bg-amber-100/60 text-amber-900 border border-amber-200 text-xs font-semibold transition"
+                className="flex items-center gap-1 px-3 py-1 rounded-xl bg-white hover:bg-amber-100/60 text-amber-900 border border-amber-200 text-xs font-semibold transition cursor-pointer"
                 title="Copy script"
               >
                 {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -610,7 +751,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                 id="btn-ai-enhance-notes"
                 onClick={handleEnhanceWithAI}
                 disabled={isEnhancingWithAI}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold transition disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
                 title="Enhance oral script with AI"
               >
                 <Sparkles className={`w-3.5 h-3.5 ${isEnhancingWithAI ? 'animate-spin' : ''}`} />
@@ -634,7 +775,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                   className="w-full bg-white border border-amber-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs"
                 />
               ) : (
-                <div className="bg-white rounded-xl p-4 border border-amber-200 text-slate-800 text-sm leading-relaxed italic relative shadow-xs">
+                <div className="bg-white rounded-xl p-4 border border-amber-200 text-slate-800 text-sm leading-relaxed italic relative shadow-xs font-serif">
                   <Quote className="w-6 h-6 text-amber-300/40 absolute top-2 right-2" />
                   "{currentSlide.trainerNotes?.oralScript}"
                 </div>
@@ -677,7 +818,17 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-slate-500 px-1 font-medium">
           <span>{t('slides.slideNavigator')}</span>
-          <span>{slides.length} {t('slides.totalSlides')}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAddSlideModalOpen(true)}
+              className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Ajouter une slide</span>
+            </button>
+            <span>•</span>
+            <span>{slides.length} {t('slides.totalSlides')}</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
@@ -687,11 +838,12 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
               id={`thumb-slide-${idx}`}
               onClick={() => {
                 setCurrentSlideIndex(idx);
+                audioEffects.playSlideClick();
                 stopSpeech();
               }}
-              className={`flex-shrink-0 w-36 h-22 rounded-xl p-2.5 border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+              className={`flex-shrink-0 w-40 h-24 rounded-xl p-2.5 border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                 currentSlideIndex === idx
-                  ? 'bg-indigo-50/80 border-indigo-600 shadow-xs ring-1 ring-indigo-600'
+                  ? 'bg-indigo-50/90 border-indigo-600 shadow-xs ring-2 ring-indigo-600'
                   : 'bg-white border-slate-200 hover:border-slate-300'
               }`}
             >
@@ -699,7 +851,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                 <span className="text-[10px] font-bold text-indigo-600 font-mono">
                   #{idx + 1}
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 truncate max-w-[60px] font-medium border border-slate-200">
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 truncate max-w-[70px] font-medium border border-slate-200">
                   {s.categoryBadge || 'Slide'}
                 </span>
               </div>
@@ -713,4 +865,3 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
     </div>
   );
 };
-

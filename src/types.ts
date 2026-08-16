@@ -68,6 +68,7 @@ export interface CoursePayload {
   slides: Slide[];
   quiz: QuizQuestion[];
   createdAt: string;
+  groupId?: string;
 }
 
 export interface ChatMessage {
@@ -76,4 +77,47 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   relatedSlideNumber?: number;
+}
+
+// User & Profile Types
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  title: string;
+  bio: string;
+  company?: string;
+  skills: string[];
+  joinedAt: string;
+  phone?: string;
+  website?: string;
+  linkedin?: string;
+}
+
+// Group Roles & Member Types
+export type GroupRole = 'owner' | 'admin' | 'member';
+
+export interface GroupMember {
+  userId: string;
+  name: string;
+  email: string;
+  avatar: string;
+  title: string;
+  bio?: string;
+  skills?: string[];
+  role: GroupRole;
+  joinedAt: string;
+}
+
+export interface TrainingGroup {
+  id: string;
+  name: string;
+  description: string;
+  code: string; // 6-digit unique code like "CYBER9"
+  icon: string;
+  ownerId: string;
+  members: GroupMember[];
+  courseIds: string[];
+  createdAt: string;
 }

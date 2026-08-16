@@ -4,22 +4,76 @@ import { HeroGenerator } from './components/HeroGenerator';
 import { SlideViewer } from './components/SlideViewer';
 import { VirtualClassroom } from './components/VirtualClassroom';
 import { InteractiveQuiz } from './components/InteractiveQuiz';
+import { GroupsDashboard } from './components/GroupsDashboard';
 import { AITutorChat } from './components/AITutorChat';
+import { SettingsModal } from './components/SettingsModal';
+import { ProfileModal } from './components/ProfileModal';
+import { AuthScreen } from './components/AuthScreen';
 import { CoursePayload } from './types';
 import { PRESET_COURSES } from './data/defaultCourses';
 import { exportCourseToPPTX } from './utils/pptxExport';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { AuthAndGroupProvider, useAuthAndGroup } from './context/AuthAndGroupContext';
+
+const STORAGE_KEY_COURSES = 'eduvibe_courses_v2';
 
 function AppContent() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'generator' | 'slides' | 'classroom' | 'quiz'>('generator');
-  const [coursesList, setCoursesList] = useState<CoursePayload[]>(PRESET_COURSES);
-  const [currentCourse, setCurrentCourse] = useState<CoursePayload>(PRESET_COURSES[0]);
+  const { isAuthenticated, currentUser, selectedViewProfile, setSelectedViewProfile, joinGroupByCode } = useAuthAndGroup();
+
+  const [activeTab, setActiveTab] = useState<'generator' | 'slides' | 'classroom' | 'quiz' | 'groups'>('generator');
+  
+  // Persistent courses from localStorage
+  const [coursesList, setCoursesList] = useState<CoursePayload[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_COURSES);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return PRESET_COURSES;
+  });
+
+  const [currentCourse, setCurrentCourse] = useState<CoursePayload>(() => coursesList[0] || PRESET_COURSES[0]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [isTutorOpen, setIsTutorOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isMyProfileOpen, setIsMyProfileOpen] = useState<boolean>(false);
+  const [hasCustomKey, setHasCustomKey] = useState<boolean>(() => {
+    return Boolean(localStorage.getItem('eduvibe_gemini_api_key'));
+  });
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [sessionCode] = useState<string>(() => `EDUVIBE-${Math.floor(1000 + Math.random() * 9000)}`);
+
+  // Detect ?join=CODE in URL query params on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const joinCode = params.get('join');
+      if (joinCode && isAuthenticated) {
+        const res = joinGroupByCode(joinCode);
+        if (res.success) {
+          setActiveTab('groups');
+          alert(`🎉 ${res.message}`);
+        }
+      }
+    }
+  }, [isAuthenticated]);
+
+  // Persist coursesList to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_COURSES, JSON.stringify(coursesList));
+    } catch {
+      // ignore
+    }
+  }, [coursesList]);
 
   // Handle Fullscreen toggle
   const toggleFullscreen = () => {
@@ -37,6 +91,11 @@ function AppContent() {
     document.addEventListener('fullscreenchange', handleFsChange);
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
+
+  // If not logged in, show Auth Gate
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
 
   // Export to PowerPoint PPTX
   const handleExportPPTX = async () => {
@@ -70,6 +129,21 @@ function AppContent() {
     setCoursesList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   };
 
+  const handleImportCourses = (imported: CoursePayload[]) => {
+    setCoursesList((prev) => [...imported, ...prev]);
+    if (imported.length > 0) {
+      setCurrentCourse(imported[0]);
+      setCurrentSlideIndex(0);
+      setActiveTab('slides');
+    }
+  };
+
+  const handleResetCourses = () => {
+    setCoursesList(PRESET_COURSES);
+    setCurrentCourse(PRESET_COURSES[0]);
+    setCurrentSlideIndex(0);
+  };
+
   const currentSlide = currentCourse.slides[currentSlideIndex] || currentCourse.slides[0];
 
   return (
@@ -91,6 +165,9 @@ function AppContent() {
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
         sessionCode={sessionCode}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenProfile={() => setIsMyProfileOpen(true)}
+        hasCustomKey={hasCustomKey}
       />
 
       {/* Main Content Body */}
@@ -128,6 +205,10 @@ function AppContent() {
             course={currentCourse}
           />
         )}
+
+        {activeTab === 'groups' && (
+          <GroupsDashboard />
+        )}
       </main>
 
       {/* Floating AI Tutor Coach Widget */}
@@ -136,6 +217,30 @@ function AppContent() {
         onClose={() => setIsTutorOpen(false)}
         course={currentCourse}
         currentSlide={currentSlide}
+      />
+
+      {/* Settings & API Key Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        coursesList={coursesList}
+        onImportCourses={handleImportCourses}
+        onResetCourses={handleResetCourses}
+        onApiKeyChange={(hasKey) => setHasCustomKey(hasKey)}
+      />
+
+      {/* Edit My Profile Modal */}
+      <ProfileModal
+        isOpen={isMyProfileOpen}
+        onClose={() => setIsMyProfileOpen(false)}
+        targetProfile={currentUser}
+      />
+
+      {/* View Another Member's Profile Modal */}
+      <ProfileModal
+        isOpen={Boolean(selectedViewProfile)}
+        onClose={() => setSelectedViewProfile(null)}
+        targetProfile={selectedViewProfile}
       />
 
       {/* Footer */}
@@ -160,8 +265,9 @@ function AppContent() {
 export default function App() {
   return (
     <LanguageProvider>
-      <AppContent />
+      <AuthAndGroupProvider>
+        <AppContent />
+      </AuthAndGroupProvider>
     </LanguageProvider>
   );
 }
-

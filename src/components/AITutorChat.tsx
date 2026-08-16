@@ -10,7 +10,11 @@ import {
   HelpCircle,
   Lightbulb,
   MessageSquare,
-  RotateCw
+  RotateCw,
+  Volume2,
+  VolumeX,
+  Copy,
+  Check
 } from 'lucide-react';
 import { ChatMessage, CoursePayload, Slide } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -50,6 +54,8 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +82,15 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
     }
   }, [messages, isOpen]);
 
+  // Clean up speech on unmount
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const handleSendMessage = async (customMessage?: string) => {
     const textToSend = (customMessage || inputText).trim();
     if (!textToSend || isLoading) return;
@@ -93,12 +108,16 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
     setIsLoading(true);
 
     try {
+      const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
       const response = await fetch('/api/tutor-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gemini-api-key': customKey,
+        },
         body: JSON.stringify({
           message: textToSend,
-          language: language || course.language,
+          language: language === 'vi' ? 'Tiếng Việt' : language === 'en' ? 'English' : 'Français',
           courseContext: {
             title: course.title,
             topic: course.topic,
@@ -125,13 +144,39 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: `${currentSlide?.title ? `Slide: "${currentSlide.title}"` : ''}`,
+        content: `Désolé, une erreur s'est produite lors de la communication. Réessayez dans un instant.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCopyMessage = (msgId: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMsgId(msgId);
+    setTimeout(() => setCopiedMsgId(null), 2000);
+  };
+
+  const handleSpeakMessage = (msgId: string, text: string) => {
+    if (!('speechSynthesis' in window)) return;
+
+    if (speakingMsgId === msgId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'fr-FR';
+    utterance.rate = 1.0;
+    utterance.onend = () => setSpeakingMsgId(null);
+    utterance.onerror = () => setSpeakingMsgId(null);
+
+    setSpeakingMsgId(msgId);
+    window.speechSynthesis.speak(utterance);
   };
 
   if (!isOpen) return null;
@@ -141,7 +186,7 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
       className={`fixed z-50 transition-all duration-300 ${
         isExpanded
           ? 'inset-4 sm:inset-10 max-w-4xl max-h-[85vh] mx-auto'
-          : 'bottom-4 right-4 w-full sm:w-[420px] max-h-[580px]'
+          : 'bottom-4 right-4 w-full sm:w-[440px] max-h-[600px]'
       } bg-white rounded-2xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5`}
     >
       {/* Header */}
@@ -204,7 +249,7 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
           return (
             <div
               key={msg.id}
-              className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} group`}
             >
               <div
                 className={`max-w-[85%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
@@ -215,9 +260,32 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
               >
                 {msg.content}
               </div>
-              <span className="text-[9px] text-slate-400 mt-1 px-1">
-                {msg.timestamp}
-              </span>
+
+              <div className="flex items-center gap-2 mt-1 px-1 text-[9px] text-slate-400">
+                <span>{msg.timestamp}</span>
+
+                {!isUser && (
+                  <>
+                    <button
+                      onClick={() => handleCopyMessage(msg.id, msg.content)}
+                      className="hover:text-slate-700 cursor-pointer flex items-center gap-0.5"
+                      title="Copier le texte"
+                    >
+                      {copiedMsgId === msg.id ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Copy className="w-2.5 h-2.5" />}
+                    </button>
+
+                    <button
+                      onClick={() => handleSpeakMessage(msg.id, msg.content)}
+                      className={`hover:text-indigo-600 cursor-pointer flex items-center gap-0.5 ${
+                        speakingMsgId === msg.id ? 'text-indigo-600 animate-pulse font-bold' : ''
+                      }`}
+                      title="Écouter la réponse"
+                    >
+                      {speakingMsgId === msg.id ? <Volume2 className="w-2.5 h-2.5" /> : <VolumeX className="w-2.5 h-2.5" />}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           );
         })}
@@ -269,4 +337,3 @@ export const AITutorChat: React.FC<AITutorChatProps> = ({
     </div>
   );
 };
-

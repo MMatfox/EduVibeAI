@@ -11,9 +11,9 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// Initialize Gemini Client safely
-const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+// Initialize Gemini Client safely with optional user-provided key
+const getGeminiClient = (customKey?: string) => {
+  const apiKey = (customKey && customKey.trim() !== '') ? customKey.trim() : process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     return null;
   }
@@ -27,17 +27,42 @@ const getGeminiClient = () => {
   });
 };
 
-// Healthcheck
+// Healthcheck & Key validator
 app.get('/api/health', (req, res) => {
+  const customKey = req.headers['x-gemini-api-key'] as string;
+  const activeKey = customKey || process.env.GEMINI_API_KEY;
   res.json({
     status: 'ok',
-    hasApiKey: Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY'),
+    hasApiKey: Boolean(activeKey && activeKey !== 'MY_GEMINI_API_KEY'),
+    isCustomKey: Boolean(customKey),
   });
+});
+
+// Endpoint: Validate an API Key
+app.post('/api/check-api-key', async (req, res) => {
+  try {
+    const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
+    const ai = getGeminiClient(customKey);
+    if (!ai) {
+      return res.json({ valid: false, message: 'No API key provided or empty key.' });
+    }
+    const testResp = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: 'Ping',
+    });
+    if (testResp.text) {
+      return res.json({ valid: true, message: 'API key is valid and connected!' });
+    }
+    return res.json({ valid: false, message: 'No response from model.' });
+  } catch (error: any) {
+    return res.json({ valid: false, message: error.message || 'Failed to connect with key.' });
+  }
 });
 
 // Endpoint: Generate Full Course with Gemini AI
 app.post('/api/generate-course', async (req, res) => {
   try {
+    const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
     const {
       topic = 'Cybersécurité en télétravail',
       audienceLevel = 'Intermediate',
@@ -45,9 +70,10 @@ app.post('/api/generate-course', async (req, res) => {
       language = 'Français',
       industry = 'Général',
       themeId = 'indigo',
+      model = 'gemini-3.7-flash',
     } = req.body;
 
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(customKey);
 
     if (!ai) {
       // Return smart generative fallback when API key is not configured
@@ -55,7 +81,7 @@ app.post('/api/generate-course', async (req, res) => {
       return res.json({
         course: fallbackCourse,
         isFallback: true,
-        message: 'Course generated with offline fallback engine. Connect a Gemini API Key in Settings > Secrets for customized dynamic generation.',
+        message: 'Course generated with offline fallback engine. Connect a Gemini API Key in Settings for customized dynamic generation.',
       });
     }
 
@@ -100,7 +126,7 @@ Generate:
 Return valid JSON adhering to the schema.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: model || 'gemini-3.7-flash',
       contents: prompt,
       config: {
         systemInstruction: `You are EduVibe AI, an expert corporate course designer. Always produce high quality instructional content in ${language}. Ensure tone is highly professional and actionable.`,
@@ -225,11 +251,93 @@ Return valid JSON adhering to the schema.`;
   }
 });
 
+// Endpoint: Generate a Single Slide dynamically
+app.post('/api/generate-single-slide', async (req, res) => {
+  try {
+    const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
+    const { courseTopic, subtopic, slideNumber = 1, language = 'Français', audienceLevel = 'Intermediate' } = req.body;
+    const ai = getGeminiClient(customKey);
+
+    if (!ai) {
+      // Fallback single slide
+      const newSlide = {
+        id: `slide-${Date.now()}`,
+        slideNumber,
+        title: subtopic || 'Nouvelle Slide Thématique',
+        subtitle: `Approfondissement pour la formation "${courseTopic}"`,
+        categoryBadge: 'Focus Pédagogique',
+        bullets: [
+          `Définir clairement les objectifs opérationnels associés à ce point clé`,
+          `Appliquer la méthode pas-à-pas pour sécuriser les flux de travail`,
+          `Identifier les erreurs courantes et instaurer un contrôle croisé`,
+          `Mesurer l'impact des bonnes pratiques sur les résultats de l'équipe`
+        ],
+        visualConcept: {
+          type: 'framework' as const,
+          title: 'Méthodologie Opérationnelle',
+          badge: 'BEST PRACTICE',
+          details: [
+            'Cadrage initial et alignement des priorités',
+            'Exécution contrôlée avec validation par étapes',
+            'Retours d’expérience & amélioration continue'
+          ]
+        },
+        trainerNotes: {
+          timeMinutes: 8,
+          keyTalkingPoints: [
+            'Souligner la simplicité de mise en œuvre immédiate',
+            'Demander aux apprenants un exemple récent de blocage similaire',
+            'Rappeler la règle d’or : simplicité, rigueur et traçabilité'
+          ],
+          oralScript: `Cette étape est cruciale pour structurer vos actions quotidiennes. Prenez le temps de valider chaque point avant de passer à la phase suivante.`,
+          interactivePrompt: `Qui parmi vous a déjà rencontré une difficulté sur ce cas précis ? Partagez votre réflexe initial.`
+        }
+      };
+      return res.json({ slide: newSlide, isFallback: true });
+    }
+
+    const prompt = `You are EduVibe AI. Create 1 single high-impact corporate training slide in ${language}.
+Main Course Topic: "${courseTopic}"
+Slide Sub-topic / Focus: "${subtopic || 'Key Strategy'}"
+Target Level: ${audienceLevel}
+Slide Number: ${slideNumber}
+
+Return a single JSON object with:
+- slideNumber (${slideNumber})
+- title (max 8 words)
+- subtitle
+- categoryBadge (e.g. "Focus Pratique", "Étude de Cas", "Plan d'Action")
+- bullets (3-4 concise points)
+- visualConcept: { type ('metric'|'framework'|'comparison'|'flow'|'takeaway'|'quote'), title, badge, details (2-3 lines), metric (optional), metricLabel (optional) }
+- trainerNotes: { timeMinutes, keyTalkingPoints (array of 3), oralScript (3-4 sentences), interactivePrompt }`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      },
+    });
+
+    const parsed = JSON.parse(response.text || '{}');
+    const slide = {
+      ...parsed,
+      id: `slide-${Date.now()}`,
+      slideNumber: slideNumber,
+    };
+    res.json({ slide, isFallback: false });
+  } catch (error: any) {
+    console.error('Error generating single slide:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint: Live AI Training Assistant Chat
 app.post('/api/tutor-chat', async (req, res) => {
   try {
-    const { message, history = [], courseContext } = req.body;
-    const ai = getGeminiClient();
+    const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
+    const { message, history = [], courseContext, language = 'Français' } = req.body;
+    const ai = getGeminiClient(customKey);
 
     if (!ai) {
       // Dynamic simulated response if no API key
@@ -241,7 +349,7 @@ app.post('/api/tutor-chat', async (req, res) => {
 Course Topic: "${courseContext?.topic || 'Corporate Training'}"
 Course Title: "${courseContext?.title || ''}"
 Current Slide Context: ${JSON.stringify(courseContext?.currentSlide || {})}
-Language: Answer in the same language as the user query (e.g., French or English).
+Language: Answer in the requested language: ${language} (or match user language).
 Tone: Highly encouraging, pedagogically crisp, structured with bullet points or emojis when helpful, concise (under 150 words unless asked for a long explanation).`;
 
     const chat = ai.chats.create({
@@ -267,21 +375,22 @@ Tone: Highly encouraging, pedagogically crisp, structured with bullet points or 
 // Endpoint: Enhance / Rewrite a Specific Slide
 app.post('/api/enhance-slide', async (req, res) => {
   try {
+    const customKey = req.body?.apiKey || (req.headers['x-gemini-api-key'] as string);
     const { slide, action = 'expand_notes', language = 'Français' } = req.body;
-    const ai = getGeminiClient();
+    const ai = getGeminiClient(customKey);
 
     if (!ai) {
       return res.json({
-        enhancedNotes: `[Notes enrichies] Insistez sur les exemples vécus des participants. Posez la question : "Comment appliquez-vous ce principe dans vos tâches hebdomadaires ?".`,
+        enhancedNotes: `[Notes enrichies] Insistez sur les exemples vécus des participants. Posez la question : "Comment appliquez-vous ce principe dans vos tâches quotidiennes pour éviter tout blocage ?".`,
       });
     }
 
     const prompt = `Given this training slide:
 Title: ${slide.title}
-Bullets: ${slide.bullets.join('; ')}
-Current Trainer Notes: ${JSON.stringify(slide.trainerNotes)}
+Bullets: ${slide.bullets?.join('; ') || ''}
+Current Trainer Notes: ${JSON.stringify(slide.trainerNotes || {})}
 
-Task: Provide an expanded, powerful oral script and 2 additional practical role-play questions for the trainer in ${language}. Keep it natural and engaging.`;
+Task: Provide an expanded, highly professional and energetic oral script and 2 additional practical role-play / discussion questions for the speaker in ${language}. Keep it natural, impactful, and conversational.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.7-flash',

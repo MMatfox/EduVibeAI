@@ -98,9 +98,15 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
     }, 1200);
 
     try {
+      const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
+      const customModel = localStorage.getItem('eduvibe_gemini_model') || 'gemini-3.7-flash';
+
       const response = await fetch('/api/generate-course', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-gemini-api-key': customKey,
+        },
         body: JSON.stringify({
           topic,
           audienceLevel,
@@ -108,6 +114,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
           language: moduleLang,
           industry,
           themeId: selectedTheme,
+          model: customModel,
         }),
       });
 
@@ -119,7 +126,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
         setStatusMessage({
           type: 'success',
           text: data.isFallback
-            ? t('generator.generatedSuccessFallback')
+            ? (data.errorNotice ? `${t('generator.generatedSuccessFallback')} (${data.errorNotice})` : t('generator.generatedSuccessFallback'))
             : t('generator.generatedSuccessGemini'),
         });
       } else {

@@ -8,15 +8,14 @@ import {
   ShieldCheck,
   Zap,
   Users,
-  Presentation,
-  CheckCircle2,
-  Briefcase
+  Briefcase,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import { useAuthAndGroup, DEFAULT_USERS } from '../context/AuthAndGroupContext';
-import { UserProfile } from '../types';
+import { useAuthAndGroup, DEMO_PRESET_USERS } from '../context/AuthAndGroupContext';
 
 export const AuthScreen: React.FC = () => {
-  const { login } = useAuthAndGroup();
+  const { loginWithCredentials, registerUser } = useAuthAndGroup();
   const [isRegisterMode, setIsRegisterMode] = useState(false);
 
   // Form states
@@ -24,41 +23,51 @@ export const AuthScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [title, setTitle] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    setErrorMsg(null);
+    setLoading(true);
 
-    if (isRegisterMode) {
-      const newUser: UserProfile = {
-        id: `user-${Date.now()}`,
-        name: name.trim() || 'Formateur EduVibe',
-        email: email.trim(),
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        title: title.trim() || 'Concepteur Pédagogique',
-        bio: 'Passionné par la transmission du savoir et les nouvelles méthodes interactives.',
-        skills: ['Formation', 'Pédagogie Interactive'],
-        joinedAt: new Date().toISOString().slice(0, 10),
-      };
-      login(newUser);
-    } else {
-      // Find matching demo user or create session user
-      const found = DEFAULT_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-      if (found) {
-        login(found);
+    try {
+      if (isRegisterMode) {
+        const res = await registerUser(
+          {
+            name: name.trim() || 'Formateur EduVibe',
+            email: email.trim(),
+            title: title.trim() || 'Concepteur Pédagogique',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            bio: 'Passionné par la transmission du savoir et les nouvelles technologies d’apprentissage.',
+            skills: ['Formation Interactive', 'Cybersécurité', 'Pédagogie'],
+          },
+          password
+        );
+        if (!res.success) {
+          setErrorMsg(res.error || 'Erreur lors de l’inscription');
+        }
       } else {
-        const customUser: UserProfile = {
-          id: `user-${Date.now()}`,
-          name: email.split('@')[0],
-          email: email.trim(),
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          title: 'Formateur & Concepteur',
-          bio: 'Membre actif EduVibe AI.',
-          skills: ['Formation', 'Cybersécurité'],
-          joinedAt: new Date().toISOString().slice(0, 10),
-        };
-        login(customUser);
+        const res = await loginWithCredentials(email, password);
+        if (!res.success) {
+          setErrorMsg(res.error || 'Identifiants incorrects');
+        }
       }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur de connexion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async (demoEmail: string) => {
+    setErrorMsg(null);
+    setLoading(true);
+    try {
+      await loginWithCredentials(demoEmail, 'password123');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,12 +101,13 @@ export const AuthScreen: React.FC = () => {
               Accès Rapide • Comptes de démonstration :
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DEFAULT_USERS.slice(0, 2).map((u) => (
+              {DEMO_PRESET_USERS.slice(0, 2).map((u) => (
                 <button
                   key={u.id}
                   type="button"
-                  onClick={() => login(u)}
-                  className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500 transition text-left cursor-pointer group"
+                  onClick={() => handleDemoLogin(u.email)}
+                  disabled={loading}
+                  className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500 transition text-left cursor-pointer group disabled:opacity-50"
                 >
                   <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-xl object-cover" />
                   <div className="overflow-hidden">
@@ -118,6 +128,13 @@ export const AuthScreen: React.FC = () => {
             </span>
             <div className="flex-grow border-t border-slate-800"></div>
           </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -175,7 +192,7 @@ export const AuthScreen: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nom@entreprise.com"
+                  placeholder="alexandre.martin@eduvibe.ai"
                   className="block w-full pl-10 pr-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -202,17 +219,30 @@ export const AuthScreen: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition cursor-pointer"
+              disabled={loading}
+              className="w-full mt-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-60"
             >
-              <span>{isRegisterMode ? 'Créer mon compte' : 'Accéder à la plateforme'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Connexion en cours...</span>
+                </>
+              ) : (
+                <>
+                  <span>{isRegisterMode ? 'Créer mon compte' : 'Accéder à la plateforme'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
           <div className="text-center pt-2">
             <button
               type="button"
-              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              onClick={() => {
+                setIsRegisterMode(!isRegisterMode);
+                setErrorMsg(null);
+              }}
               className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline"
             >
               {isRegisterMode
@@ -226,7 +256,7 @@ export const AuthScreen: React.FC = () => {
         <div className="mt-8 grid grid-cols-3 gap-2 text-center text-slate-500 text-[11px]">
           <div className="flex flex-col items-center gap-1">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>Sécurité & Rôles Admin</span>
+            <span>Base de données & Auth</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <Users className="w-4 h-4 text-indigo-400" />

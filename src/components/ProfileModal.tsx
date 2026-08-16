@@ -99,10 +99,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isEditingOwnProfile) return;
 
-    updateProfile({
+    await updateProfile({
       name: name.trim() || currentUser?.name,
       email: email.trim() || currentUser?.email,
       title: title.trim(),

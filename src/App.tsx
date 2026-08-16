@@ -57,11 +57,12 @@ function AppContent() {
       const params = new URLSearchParams(window.location.search);
       const joinCode = params.get('join');
       if (joinCode && isAuthenticated) {
-        const res = joinGroupByCode(joinCode);
-        if (res.success) {
-          setActiveTab('groups');
-          alert(`🎉 ${res.message}`);
-        }
+        joinGroupByCode(joinCode).then((res) => {
+          if (res.success) {
+            setActiveTab('groups');
+            alert(`🎉 ${res.message}`);
+          }
+        });
       }
     }
   }, [isAuthenticated]);

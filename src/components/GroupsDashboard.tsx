@@ -72,19 +72,19 @@ export const GroupsDashboard: React.FC = () => {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCreateSubmit = (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
-    createGroup(newGroupName, newGroupDesc, newGroupIcon);
+    await createGroup(newGroupName, newGroupDesc, newGroupIcon);
     setNewGroupName('');
     setNewGroupDesc('');
     setIsCreateModalOpen(false);
   };
 
-  const handleJoinSubmit = (e: React.FormEvent) => {
+  const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinCodeInput.trim()) return;
-    const result = joinGroupByCode(joinCodeInput);
+    const result = await joinGroupByCode(joinCodeInput);
     setJoinStatus(result);
     if (result.success) {
       setTimeout(() => {

@@ -59,6 +59,186 @@ app.post('/api/check-api-key', async (req, res) => {
   }
 });
 
+import { db } from './src/server/db';
+
+// Auth Routes
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email requis' });
+    }
+    const user = db.getUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    // Return user without passwordHash
+    const { passwordHash, ...safeUser } = user;
+    return res.json({ success: true, user: safeUser });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Erreur serveur' });
+  }
+});
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { name, email, password, title, company, avatar, skills } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email requis' });
+    }
+    const existing = db.getUserByEmail(email);
+    if (existing) {
+      const { passwordHash, ...safeUser } = existing;
+      return res.json({ success: true, user: safeUser, message: 'Compte existant connecté' });
+    }
+    const created = db.createUser(
+      {
+        name,
+        email,
+        title,
+        company,
+        avatar,
+        skills,
+      },
+      password || 'password123'
+    );
+    const { passwordHash, ...safeUser } = created;
+    return res.status(201).json({ success: true, user: safeUser });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Erreur lors de la création de compte' });
+  }
+});
+
+app.put('/api/auth/profile', (req, res) => {
+  try {
+    const { userId, ...updates } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId requis' });
+    }
+    const updated = db.updateUserProfile(userId, updates);
+    if (!updated) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+    const { passwordHash, ...safeUser } = updated;
+    return res.json({ success: true, user: safeUser });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Erreur mise à jour profil' });
+  }
+});
+
+// Group Routes
+app.get('/api/groups', (req, res) => {
+  try {
+    const userId = req.query.userId as string;
+    if (userId) {
+      return res.json({ groups: db.getGroupsForUser(userId) });
+    }
+    return res.json({ groups: db.getAllGroups() });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/groups', (req, res) => {
+  try {
+    const { name, description, icon, owner } = req.body;
+    if (!name || !owner?.id) {
+      return res.status(400).json({ error: 'Nom du groupe et propriétaire requis' });
+    }
+    const newGroup = db.createGroup(owner, name, description || '', icon || '🛡️');
+    return res.status(201).json({ success: true, group: newGroup });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/groups/join', (req, res) => {
+  try {
+    const { code, user } = req.body;
+    if (!code || !user?.id) {
+      return res.status(400).json({ error: 'Code et informations utilisateur requis' });
+    }
+    const result = db.joinGroup(code, user);
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/groups/:id/leave', (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'userId requis' });
+    const success = db.leaveGroup(groupId, userId);
+    return res.json({ success });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/groups/:id', (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const success = db.deleteGroup(groupId);
+    return res.json({ success });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/groups/:id/members/:userId', (req, res) => {
+  try {
+    const { id: groupId, userId } = req.params;
+    const { role } = req.body;
+    const success = db.updateMemberRole(groupId, userId, role);
+    return res.json({ success });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/groups/:id/members/:userId', (req, res) => {
+  try {
+    const { id: groupId, userId } = req.params;
+    const success = db.removeMember(groupId, userId);
+    return res.json({ success });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Course Routes (DB Persistence)
+app.get('/api/courses', (req, res) => {
+  try {
+    const courses = db.getAllCourses();
+    return res.json({ courses });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/courses', (req, res) => {
+  try {
+    const course = req.body.course;
+    if (!course?.id) return res.status(400).json({ error: 'Course payload requis' });
+    const saved = db.saveCourse(course);
+    return res.json({ success: true, course: saved });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/courses/:id', (req, res) => {
+  try {
+    const success = db.deleteCourse(req.params.id);
+    return res.json({ success });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Endpoint: Generate Full Course with Gemini AI
 app.post('/api/generate-course', async (req, res) => {
   try {

@@ -54,6 +54,7 @@ interface AuthAndGroupContextType {
   isAuthLoading: boolean;
   loginWithCredentials: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginAsGuest: (name?: string) => void;
   registerUser: (userData: Partial<UserProfile>, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -197,6 +198,17 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const loginWithCredentials = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmedEmail = (email || '').trim().toLowerCase();
+
+    // 1. Instant check for DEMO_PRESET_USERS (zero latency, offline/online resilient)
+    const foundDemo = DEMO_PRESET_USERS.find((u) => u.email.toLowerCase() === trimmedEmail);
+    if (foundDemo) {
+      setCurrentUser(foundDemo);
+      await refreshGroups();
+      return { success: true };
+    }
+
+    // 2. Firebase authentication
     if (isFirebaseConfigured() && password) {
       const fbRes = await loginWithEmail(email, password);
       if (fbRes.success && fbRes.user) {
@@ -206,7 +218,7 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
     }
 
-    // Server Database Authentication
+    // 3. Server Database Authentication
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -221,14 +233,24 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       return { success: false, error: data.error || 'Identifiants invalides' };
     } catch (err: any) {
-      // Offline fallback: check DEMO_PRESET_USERS
-      const foundDemo = DEMO_PRESET_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-      if (foundDemo) {
-        setCurrentUser(foundDemo);
-        return { success: true };
-      }
       return { success: false, error: err.message || 'Impossible de contacter le serveur.' };
     }
+  };
+
+  const loginAsGuest = (name: string = 'Formateur Invité') => {
+    const guestUser: UserProfile = {
+      id: `guest-${Date.now()}`,
+      name,
+      email: 'guest@eduvibe.ai',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      title: 'Formateur & Concepteur',
+      bio: 'Session de formation EduVibe AI.',
+      company: 'EduVibe Solutions',
+      skills: ['Formation Interactive', 'Cybersécurité', 'Pédagogie'],
+      joinedAt: new Date().toISOString().slice(0, 10),
+    };
+    setCurrentUser(guestUser);
+    refreshGroups();
   };
 
   const registerUser = async (userData: Partial<UserProfile>, password?: string): Promise<{ success: boolean; error?: string }> => {
@@ -425,6 +447,7 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
         isAuthLoading,
         loginWithCredentials,
         loginWithGoogle,
+        loginAsGuest,
         registerUser,
         logout,
         updateProfile,

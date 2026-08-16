@@ -15,7 +15,7 @@ import {
 import { useAuthAndGroup, DEMO_PRESET_USERS } from '../context/AuthAndGroupContext';
 
 export const AuthScreen: React.FC = () => {
-  const { loginWithCredentials, loginWithGoogle, registerUser } = useAuthAndGroup();
+  const { loginWithCredentials, loginWithGoogle, loginAsGuest, registerUser } = useAuthAndGroup();
   const [isRegisterMode, setIsRegisterMode] = useState(false);
 
   // Form states
@@ -153,7 +153,7 @@ export const AuthScreen: React.FC = () => {
           <div className="relative flex py-1 items-center">
             <div className="flex-grow border-t border-slate-800"></div>
             <span className="flex-shrink mx-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              Ou avec votre adresse email
+              Ou choisissez un compte démo
             </span>
             <div className="flex-grow border-t border-slate-800"></div>
           </div>
@@ -161,23 +161,23 @@ export const AuthScreen: React.FC = () => {
           {/* Quick Demo Switcher */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              <span>Comptes Démo Rapides :</span>
+              <span>Comptes Démo (Accès Immédiat 1-Clic) :</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DEMO_PRESET_USERS.slice(0, 2).map((u) => (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {DEMO_PRESET_USERS.map((u) => (
                 <button
                   key={u.id}
                   type="button"
                   onClick={() => handleDemoLogin(u.email)}
                   disabled={loading || googleLoading}
-                  className="flex items-center gap-2.5 p-2 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500 transition text-left cursor-pointer group disabled:opacity-50"
+                  className="flex items-center gap-2 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500 transition text-left cursor-pointer group disabled:opacity-50"
                 >
-                  <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-xl object-cover" />
+                  <img src={u.avatar} alt={u.name} className="w-6 h-6 rounded-lg object-cover flex-shrink-0" />
                   <div className="overflow-hidden">
                     <p className="text-xs font-bold text-white group-hover:text-indigo-400 truncate">
-                      {u.name}
+                      {u.name.split(' ')[0]}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">{u.title}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{u.title.split('&')[0]}</p>
                   </div>
                 </button>
               ))}
@@ -185,9 +185,20 @@ export const AuthScreen: React.FC = () => {
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
-              <span>{errorMsg}</span>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-2 animate-in fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" />
+                <span className="leading-relaxed">{errorMsg}</span>
+              </div>
+              <div className="pt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => loginAsGuest('Formateur Google')}
+                  className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-semibold text-[11px] border border-rose-500/30 transition cursor-pointer"
+                >
+                  Continuer en Mode Démo Immédiat
+                </button>
+              </div>
             </div>
           )}
 
@@ -291,18 +302,26 @@ export const AuthScreen: React.FC = () => {
             </button>
           </form>
 
-          <div className="text-center pt-1">
+          <div className="text-center pt-1 space-y-2">
             <button
               type="button"
               onClick={() => {
                 setIsRegisterMode(!isRegisterMode);
                 setErrorMsg(null);
               }}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline"
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline block w-full"
             >
               {isRegisterMode
                 ? 'Déjà inscrit ? Se connecter'
                 : 'Pas encore de compte ? Créer un profil formateur'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => loginAsGuest('Visiteur Démo')}
+              className="text-xs text-slate-400 hover:text-white transition cursor-pointer py-1 font-medium"
+            >
+              🚀 Tester sans connexion (Accès Invité immédiat)
             </button>
           </div>
         </div>

@@ -1,0 +1,12 @@
+{
+  "name": "EduVibe AI",
+  "description": "Interactive AI-powered corporate training generator, live presentation suite, virtual meeting room, and quiz simulator.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "display-capture"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

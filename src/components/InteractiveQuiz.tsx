@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import {
   HelpCircle,
@@ -17,11 +17,15 @@ import {
   Volume2,
   VolumeX,
   Eye,
-  Check
+  Check,
+  Timer,
+  Zap,
+  Star
 } from 'lucide-react';
 import { CoursePayload, QuizQuestion } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuthAndGroup } from '../context/AuthAndGroupContext';
 import { audioEffects } from '../utils/audioEffects';
 
 interface InteractiveQuizProps {
@@ -31,7 +35,9 @@ interface InteractiveQuizProps {
 
 export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
   const { language, t } = useLanguage();
+  const { currentUser } = useAuthAndGroup();
   const questions = course.quiz || [];
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
@@ -39,14 +45,43 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
   const [score, setScore] = useState<number>(0);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [maxStreak, setMaxStreak] = useState<number>(0);
+  const [totalXp, setTotalXp] = useState<number>(0);
   const [showHint, setShowHint] = useState<boolean>(false);
   const [isQuizCompleted, setIsQuizCompleted] = useState<boolean>(false);
   const [showReviewMode, setShowReviewMode] = useState<boolean>(false);
-  const [userName, setUserName] = useState<string>('Alexandre Martin');
+  const [userName, setUserName] = useState<string>(() => currentUser?.name || 'Alexandre Martin');
   const [isMuted, setIsMuted] = useState<boolean>(() => audioEffects.getIsMuted());
+
+  // Timed mode
+  const [isTimedMode, setIsTimedMode] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<number>(30);
 
   const theme = COURSE_THEMES[course.themeId] || COURSE_THEMES.indigo;
   const currentQuestion: QuizQuestion | undefined = questions[currentQuestionIndex];
+
+  // Timer countdown
+  useEffect(() => {
+    if (!isTimedMode || isQuizCompleted || showExplanation || !currentQuestion) return;
+
+    if (timeLeft <= 0) {
+      // Time expired: auto-select nothing / mark incorrect
+      handleSelectOption(-1);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isTimedMode, timeLeft, isQuizCompleted, showExplanation, currentQuestionIndex]);
+
+  // Sync user name if currentUser changes
+  useEffect(() => {
+    if (currentUser?.name) {
+      setUserName(currentUser.name);
+    }
+  }, [currentUser]);
 
   const handleSelectOption = (index: number) => {
     if (selectedOptionIndex !== null || isQuizCompleted) return;
@@ -62,6 +97,10 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
       const newStreak = currentStreak + 1;
       setCurrentStreak(newStreak);
       if (newStreak > maxStreak) setMaxStreak(newStreak);
+
+      const earnedXp = 100 + newStreak * 25 + (isTimedMode ? timeLeft * 5 : 0);
+      setTotalXp((prev) => prev + earnedXp);
+
       audioEffects.playCorrect();
     } else {
       setCurrentStreak(0);
@@ -75,14 +114,15 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
       setSelectedOptionIndex(null);
       setShowExplanation(false);
       setShowHint(false);
+      setTimeLeft(30);
     } else {
       setIsQuizCompleted(true);
       audioEffects.playFanfare();
       // Trigger Confetti Celebration!
       try {
         confetti({
-          particleCount: 120,
-          spread: 80,
+          particleCount: 150,
+          spread: 90,
           origin: { y: 0.6 },
         });
       } catch (e) {
@@ -98,6 +138,8 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
     setUserAnswers([]);
     setScore(0);
     setCurrentStreak(0);
+    setTotalXp(0);
+    setTimeLeft(30);
     setShowHint(false);
     setIsQuizCompleted(false);
     setShowReviewMode(false);
@@ -134,31 +176,61 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
     return new Date().toLocaleDateString('fr-FR');
   };
 
+  const certVerificationCode = `EDUVIBE-${Math.abs(
+    course.title.split('').reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+  )
+    .toString(36)
+    .toUpperCase()
+    .slice(0, 8)}`;
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 py-6 px-4 sm:px-6">
       {!isQuizCompleted ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 shadow-xs space-y-8">
-          {/* Header & Progress */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xs space-y-8 animate-in fade-in">
+          {/* Header & Controls */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100">
                   <HelpCircle className="w-5 h-5" />
                 </span>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
                     {t('quiz.title')}
                   </h2>
                   <p className="text-xs text-slate-500">{course.title}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                {/* Timed Mode Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsTimedMode(!isTimedMode)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer ${
+                    isTimedMode
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-2xs'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  }`}
+                  title="Activer/Désactiver le chronomètre par question"
+                >
+                  <Timer className="w-3.5 h-3.5" />
+                  <span>{isTimedMode ? `${timeLeft}s` : t('quiz.timerMode')}</span>
+                </button>
+
                 {/* Streak Badge */}
                 {currentStreak > 1 && (
                   <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-bold flex items-center gap-1 animate-bounce">
                     <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>x{currentStreak} Streak!</span>
+                    <span>x{currentStreak} {t('quiz.streak')}</span>
+                  </span>
+                )}
+
+                {/* XP Badge */}
+                {totalXp > 0 && (
+                  <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>+{totalXp} XP</span>
                   </span>
                 )}
 
@@ -176,17 +248,29 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                 </span>
 
                 <span className="text-xs font-mono px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold">
-                  {t('quiz.score')}: {score} pts
+                  {score} / {questions.length}
                 </span>
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-              <div
-                className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
-                style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-              />
+            {/* Progress Bar & Timer bar */}
+            <div className="space-y-1">
+              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-300 rounded-full"
+                  style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                />
+              </div>
+              {isTimedMode && !showExplanation && (
+                <div className="w-full h-1 bg-amber-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ${
+                      timeLeft <= 5 ? 'bg-rose-500' : timeLeft <= 10 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${(timeLeft / 30) * 100}%` }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -194,46 +278,46 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                {t('quiz.level')}: {currentQuestion.difficulty || 'General'}
+                {t('quiz.level')}: {currentQuestion?.difficulty || 'General'}
               </span>
 
               {/* Hint Trigger */}
-              {currentQuestion.hint && !showHint && !showExplanation && (
+              {currentQuestion?.hint && !showHint && !showExplanation && (
                 <button
                   onClick={() => setShowHint(true)}
                   className="text-xs text-amber-700 hover:text-amber-800 flex items-center gap-1 font-semibold transition cursor-pointer"
                 >
-                  <Lightbulb className="w-3.5 h-3.5" />
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
                   <span>{t('quiz.hintBtn')}</span>
                 </button>
               )}
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 leading-relaxed">
-              {currentQuestion.question}
+            <h3 className="text-lg sm:text-2xl font-bold text-slate-900 leading-relaxed">
+              {currentQuestion?.question}
             </h3>
 
             {/* Revealed Hint */}
             {showHint && (
-              <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-950 text-xs flex items-start gap-2 animate-in fade-in shadow-xs">
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 text-xs flex items-start gap-2 animate-in fade-in shadow-2xs">
                 <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                <span><strong className="text-amber-800">{t('quiz.hintLabel')}:</strong> {currentQuestion.hint}</span>
+                <span><strong className="text-amber-800">{t('quiz.hintLabel')}:</strong> {currentQuestion?.hint}</span>
               </div>
             )}
           </div>
 
           {/* Options Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {currentQuestion.options.map((option, optIdx) => {
+            {currentQuestion?.options.map((option, optIdx) => {
               const isSelected = selectedOptionIndex === optIdx;
               const isCorrect = optIdx === currentQuestion.correctOptionIndex;
 
-              let optionStyle = 'bg-white border-slate-200 hover:border-slate-300 text-slate-800 shadow-xs';
+              let optionStyle = 'bg-white border-slate-200 hover:border-indigo-400 text-slate-800 shadow-2xs';
               if (showExplanation) {
                 if (isCorrect) {
                   optionStyle = 'bg-emerald-50 border-emerald-500 text-emerald-950 shadow-xs ring-1 ring-emerald-500 font-semibold';
                 } else if (isSelected) {
-                  optionStyle = 'bg-red-50 border-red-500 text-red-950 shadow-xs ring-1 ring-red-500 font-semibold';
+                  optionStyle = 'bg-rose-50 border-rose-500 text-rose-950 shadow-xs ring-1 ring-red-500 font-semibold';
                 } else {
                   optionStyle = 'bg-slate-50 border-slate-200 text-slate-400 opacity-60';
                 }
@@ -245,7 +329,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                   id={`quiz-option-${optIdx}`}
                   onClick={() => handleSelectOption(optIdx)}
                   disabled={showExplanation}
-                  className={`p-4 rounded-xl border text-left text-sm font-medium transition-all flex items-start justify-between gap-3 cursor-pointer ${optionStyle}`}
+                  className={`p-4 rounded-2xl border text-left text-sm font-medium transition-all flex items-start justify-between gap-3 cursor-pointer ${optionStyle}`}
                 >
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-700 flex-shrink-0 mt-0.5">
@@ -259,7 +343,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                       {isCorrect ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                       ) : isSelected ? (
-                        <XCircle className="w-5 h-5 text-red-600" />
+                        <XCircle className="w-5 h-5 text-rose-600" />
                       ) : null}
                     </div>
                   )}
@@ -271,14 +355,14 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
           {/* Explanation Banner */}
           {showExplanation && (
             <div
-              className={`p-5 rounded-xl border space-y-2 animate-in fade-in shadow-xs ${
-                selectedOptionIndex === currentQuestion.correctOptionIndex
+              className={`p-5 rounded-2xl border space-y-2 animate-in fade-in shadow-xs ${
+                selectedOptionIndex === currentQuestion?.correctOptionIndex
                   ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950'
                   : 'bg-indigo-50/90 border-indigo-200 text-indigo-950'
               }`}
             >
               <div className="flex items-center gap-2 font-bold text-sm">
-                {selectedOptionIndex === currentQuestion.correctOptionIndex ? (
+                {selectedOptionIndex === currentQuestion?.correctOptionIndex ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span className="text-emerald-800">{t('quiz.correctFeedback')}</span>
@@ -291,7 +375,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                 )}
               </div>
               <p className="text-xs sm:text-sm leading-relaxed text-slate-700">
-                {currentQuestion.explanation}
+                {currentQuestion?.explanation}
               </p>
             </div>
           )}
@@ -302,7 +386,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
               <button
                 id="btn-quiz-next-question"
                 onClick={handleNextQuestion}
-                className="py-2.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-xs flex items-center gap-2 transition cursor-pointer"
+                className="py-3 px-7 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md flex items-center gap-2 transition cursor-pointer"
               >
                 <span>
                   {currentQuestionIndex < questions.length - 1
@@ -318,7 +402,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
         /* QUIZ COMPLETED: RESULTS & CERTIFICATE */
         <div className="space-y-8 animate-in fade-in">
           {/* Results Summary Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-6 shadow-xs">
+          <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 text-center space-y-6 shadow-xs">
             <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto shadow-xs border border-amber-200">
               <Trophy className="w-10 h-10 text-amber-600" />
             </div>
@@ -333,7 +417,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
             </div>
 
             {/* Score Metric Cards */}
-            <div className="inline-flex items-center gap-6 bg-slate-50 px-6 py-4 rounded-2xl border border-slate-200 shadow-xs">
+            <div className="inline-flex flex-wrap items-center justify-center gap-6 bg-slate-50 px-8 py-5 rounded-3xl border border-slate-200 shadow-xs">
               <div>
                 <div className="text-3xl font-black text-indigo-600 font-mono">
                   {score} / {questions.length}
@@ -342,7 +426,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                   {t('quiz.correctAnswers')}
                 </div>
               </div>
-              <div className="w-px h-10 bg-slate-200" />
+              <div className="hidden sm:block w-px h-10 bg-slate-200" />
               <div>
                 <div className="text-3xl font-black text-emerald-600 font-mono">
                   {scorePercentage}%
@@ -353,7 +437,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
               </div>
               {maxStreak > 1 && (
                 <>
-                  <div className="w-px h-10 bg-slate-200" />
+                  <div className="hidden sm:block w-px h-10 bg-slate-200" />
                   <div>
                     <div className="text-3xl font-black text-amber-600 font-mono flex items-center justify-center gap-1">
                       <span>{maxStreak}</span>
@@ -361,6 +445,19 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                     </div>
                     <div className="text-[11px] text-slate-500 uppercase font-semibold">
                       Max Streak
+                    </div>
+                  </div>
+                </>
+              )}
+              {totalXp > 0 && (
+                <>
+                  <div className="hidden sm:block w-px h-10 bg-slate-200" />
+                  <div>
+                    <div className="text-3xl font-black text-purple-600 font-mono">
+                      +{totalXp}
+                    </div>
+                    <div className="text-[11px] text-slate-500 uppercase font-semibold">
+                      XP Total
                     </div>
                   </div>
                 </>
@@ -387,7 +484,7 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>{showReviewMode ? 'Masquer la révision' : 'Revoir toutes les réponses'}</span>
+                <span>{showReviewMode ? 'Masquer la révision' : t('quiz.reviewMode')}</span>
               </button>
 
               <button
@@ -403,10 +500,10 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
 
           {/* QUESTION REVIEW MODE */}
           {showReviewMode && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs animate-in fade-in">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs animate-in fade-in">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                <span>Récapitulatif des Questions & Explications</span>
+                <span>{t('quiz.reviewMode')}</span>
               </h3>
 
               <div className="space-y-4">
@@ -417,22 +514,22 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                   return (
                     <div
                       key={q.id || idx}
-                      className={`p-4 rounded-xl border space-y-2.5 ${
-                        isCorrect ? 'bg-emerald-50/50 border-emerald-200' : 'bg-rose-50/50 border-rose-200'
+                      className={`p-4 sm:p-5 rounded-2xl border space-y-3 ${
+                        isCorrect ? 'bg-emerald-50/40 border-emerald-200' : 'bg-rose-50/40 border-rose-200'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
                           {idx + 1}. {q.question}
                         </h4>
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
                             isCorrect
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                               : 'bg-rose-100 text-rose-800 border border-rose-200'
                           }`}
                         >
-                          {isCorrect ? 'Correct' : 'Erreur'}
+                          {isCorrect ? '✓ Correct' : '✕ Erreur'}
                         </span>
                       </div>
 
@@ -440,9 +537,9 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                         {q.options.map((opt, optIdx) => (
                           <div
                             key={optIdx}
-                            className={`p-2 rounded-lg border flex items-center justify-between gap-1.5 ${
+                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-1.5 ${
                               optIdx === q.correctOptionIndex
-                                ? 'bg-emerald-100 border-emerald-400 font-semibold text-emerald-950'
+                                ? 'bg-emerald-100 border-emerald-400 font-semibold text-emerald-950 shadow-2xs'
                                 : userAns?.selectedIndex === optIdx && !isCorrect
                                 ? 'bg-rose-100 border-rose-400 font-semibold text-rose-950'
                                 : 'bg-white border-slate-200 text-slate-600'
@@ -454,8 +551,8 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                         ))}
                       </div>
 
-                      <p className="text-xs text-slate-600 bg-white/80 p-2.5 rounded-lg border border-slate-200/80 leading-relaxed">
-                        💡 <strong>Explication :</strong> {q.explanation}
+                      <p className="text-xs text-slate-700 bg-white/90 p-3 rounded-xl border border-slate-200 leading-relaxed">
+                        💡 <strong>{t('quiz.explanationLabel')}</strong> {q.explanation}
                       </p>
                     </div>
                   );
@@ -465,17 +562,17 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
           )}
 
           {/* OFFICIAL CERTIFICATE OF COMPLETION CARD */}
-          <div className="bg-white rounded-2xl border-2 border-indigo-600 p-8 sm:p-12 shadow-xs relative overflow-hidden text-center space-y-6">
+          <div className="bg-gradient-to-b from-white to-slate-50 rounded-3xl border-2 border-indigo-600 p-8 sm:p-12 shadow-md relative overflow-hidden text-center space-y-6">
             <div className="flex items-center justify-center gap-2 text-indigo-600">
-              <Award className="w-8 h-8" />
-              <span className="text-xs uppercase tracking-widest font-extrabold text-indigo-700">
+              <Award className="w-9 h-9" />
+              <span className="text-xs uppercase tracking-widest font-black text-indigo-700">
                 {t('quiz.certHeader')}
               </span>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                EduVibe AI Certificate
+            <div className="space-y-1.5">
+              <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                EduVibe AI Certificate of Mastery
               </h1>
               <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">
                 {t('quiz.certSub')}
@@ -488,13 +585,13 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
                 type="text"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                className="text-center font-bold text-xl sm:text-2xl text-indigo-950 bg-transparent border-b-2 border-dashed border-indigo-300 pb-1 focus:outline-none focus:border-indigo-600 w-full"
-                title="Name"
+                className="text-center font-extrabold text-2xl sm:text-3xl text-indigo-950 bg-transparent border-b-2 border-dashed border-indigo-300 pb-1 focus:outline-none focus:border-indigo-600 w-full"
+                title="Nom de l'apprenant"
               />
               <p className="text-xs text-slate-600 leading-relaxed pt-2">
                 {t('quiz.forCompleting')}
               </p>
-              <h4 className="text-base font-bold text-slate-900 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 px-4 py-2.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
                 {course.title}
               </h4>
             </div>
@@ -502,15 +599,15 @@ export const InteractiveQuiz: React.FC<InteractiveQuizProps> = ({ course }) => {
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200 text-xs text-slate-600 max-w-md mx-auto font-medium">
               <div>
                 <span className="block text-[10px] text-slate-400 uppercase font-semibold">{t('quiz.certDate')}</span>
-                <span className="font-mono text-slate-700">{getLocaleDate()}</span>
+                <span className="font-mono text-slate-800 font-bold">{getLocaleDate()}</span>
               </div>
               <div>
                 <span className="block text-[10px] text-slate-400 uppercase font-semibold">{t('quiz.certScore')}</span>
-                <span className="font-mono text-emerald-600 font-bold">{scorePercentage}%</span>
+                <span className="font-mono text-emerald-600 font-bold">{scorePercentage}% ({score}/{questions.length})</span>
               </div>
               <div>
                 <span className="block text-[10px] text-slate-400 uppercase font-semibold">{t('quiz.certAuth')}</span>
-                <span className="font-mono text-indigo-600 font-semibold">EDUVIBE-OK</span>
+                <span className="font-mono text-indigo-600 font-bold">{certVerificationCode}</span>
               </div>
             </div>
           </div>

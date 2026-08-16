@@ -738,13 +738,11 @@ export const INDUSTRIES_BY_LANG: Record<'fr' | 'en' | 'vi', string[]> = {
     'Retail & Consumer Goods',
   ],
   vi: [
-    'Tổng hợp & Dịch vụ Doanh nghiệp',
-    'Công nghệ thông tin & Phần mềm',
-    'Tài chính, Ngân hàng & Bảo hiểm',
-    'Y tế & Dược phẩm',
     'Sản xuất & Vận tải Logistics',
     'Bán lẻ & Thương mại điện tử',
   ],
 };
+
+export const DEFAULT_COURSES = PRESET_COURSES;
 
 

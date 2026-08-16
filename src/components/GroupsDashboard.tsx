@@ -43,7 +43,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
     removeMember,
     openUserProfileById,
   } = useAuthAndGroup();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -106,14 +106,14 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
       alert('En tant que créateur, veuillez transférer la propriété ou supprimer le groupe.');
       return;
     }
-    if (confirm(`Êtes-vous sûr de vouloir quitter le groupe "${activeGroup.name}" ?`)) {
+    if (confirm(t('groups.confirmLeave'))) {
       leaveGroup(activeGroup.id);
     }
   };
 
   const handleDeleteGroup = () => {
     if (!activeGroup) return;
-    if (confirm(`Supprimer définitivement le groupe "${activeGroup.name}" ? Tous les membres perdront l'accès.`)) {
+    if (confirm(t('groups.confirmDelete'))) {
       deleteGroup(activeGroup.id);
     }
   };
@@ -125,13 +125,13 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold">
             <Users className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Espace Équipes & Groupes de Formation</span>
+            <span>{t('groups.badge')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Mes Groupes de Formation ({userGroups.length})
+            {t('groups.title')} ({userGroups.length})
           </h1>
           <p className="text-sm text-slate-500 max-w-xl">
-            Collaborez avec vos formateurs et apprenants, partagez vos modules de formation et administrez les accès en toute sécurité.
+            {t('groups.description')}
           </p>
         </div>
 
@@ -141,7 +141,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 transition shadow-2xs cursor-pointer"
           >
             <UserPlus className="w-4 h-4 text-indigo-600" />
-            <span>Rejoindre avec un code</span>
+            <span>{t('groups.joinWithCode')}</span>
           </button>
 
           <button
@@ -149,7 +149,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Créer un groupe</span>
+            <span>{t('groups.createGroup')}</span>
           </button>
         </div>
       </div>
@@ -159,27 +159,27 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
         {/* Left 4 Cols: Groups Selector List */}
         <div className="lg:col-span-4 space-y-4">
           <div className="flex items-center justify-between px-1 text-xs font-bold uppercase tracking-wider text-slate-500">
-            <span>Vos Équipes</span>
-            <span>{userGroups.length} groupe(s)</span>
+            <span>{t('groups.yourTeams')}</span>
+            <span>{userGroups.length} {t('groups.groupCount')}</span>
           </div>
 
           {userGroups.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center space-y-3">
               <Users className="w-8 h-8 text-slate-400 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-800">Aucun groupe pour le moment</h4>
-              <p className="text-xs text-slate-500">Rejoignez un groupe avec un code d'invitation ou créez le vôtre !</p>
+              <h4 className="text-sm font-bold text-slate-800">{t('groups.noGroup')}</h4>
+              <p className="text-xs text-slate-500">{t('groups.noGroupDesc')}</p>
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
                   className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold cursor-pointer"
                 >
-                  Créer mon premier groupe
+                  {t('groups.createFirst')}
                 </button>
                 <button
                   onClick={() => setIsJoinModalOpen(true)}
                   className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer"
                 >
-                  Rejoindre avec un code
+                  {t('groups.joinWithCode')}
                 </button>
               </div>
             </div>
@@ -215,7 +215,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                                 : 'bg-slate-100 text-slate-600'
                             }`}
                           >
-                            {userRole === 'owner' ? '👑 Créateur' : userRole === 'admin' ? '🛡️ Admin' : '👤 Membre'}
+                            {userRole === 'owner' ? t('groups.owner') : userRole === 'admin' ? t('groups.admin') : t('groups.member')}
                           </span>
                         </div>
                       </div>
@@ -240,7 +240,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                           />
                         ))}
                       </div>
-                      <span className="font-medium text-slate-600">{grp.members.length} membre(s)</span>
+                      <span className="font-medium text-slate-600">{grp.members.length} {t('groups.memberCount')}</span>
                     </div>
                   </div>
                 );
@@ -270,19 +270,19 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   <button
                     onClick={() => onStartVisio(activeGroup)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
-                    title="Lancer la visio et présenter les diapositives pour ce groupe"
+                    title={t('groups.launchVisio')}
                   >
                     <Video className="w-3.5 h-3.5" />
-                    <span>Lancer la Visio du Groupe</span>
+                    <span>{t('groups.launchVisio')}</span>
                   </button>
                 )}
 
                 <button
                   onClick={handleCopyCode}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono font-bold border border-slate-200 transition cursor-pointer"
-                  title="Copier le code à 6 caractères"
+                  title={t('groups.copyCode')}
                 >
-                  <span className="text-slate-400 font-sans text-[10px]">Code :</span>
+                  <span className="text-slate-400 font-sans text-[10px]">{t('groups.inviteCode')} :</span>
                   <span>{activeGroup.code}</span>
                   {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
                 </button>
@@ -290,10 +290,10 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                 <button
                   onClick={handleCopyInviteLink}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 transition cursor-pointer"
-                  title="Copier le lien d'invitation direct"
+                  title={t('groups.copyLink')}
                 >
                   <Link className="w-3.5 h-3.5" />
-                  <span>{copiedLink ? 'Lien copié !' : 'Lien d’invitation'}</span>
+                  <span>{copiedLink ? t('groups.linkCopied') : t('groups.copyLink')}</span>
                 </button>
               </div>
             </div>
@@ -304,12 +304,9 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-indigo-600" />
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                    Membres du groupe ({activeGroup.members.length})
+                    {t('groups.membersList')} ({activeGroup.members.length})
                   </h3>
                 </div>
-                <span className="text-xs text-slate-400">
-                  Cliquez sur un profil pour voir ses détails
-                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -354,7 +351,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                                 : 'bg-slate-200/80 text-slate-700'
                             }`}
                           >
-                            {isMemberOwner ? '👑 Créateur' : isMemberAdmin ? '🛡️ Admin' : '👤 Membre'}
+                            {isMemberOwner ? t('groups.owner') : isMemberAdmin ? t('groups.admin') : t('groups.member')}
                           </span>
                         </div>
                       </div>
@@ -377,7 +374,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                               title="Nommer Administrateur du groupe"
                             >
                               <ShieldCheck className="w-3 h-3 text-indigo-600" />
-                              <span>Promouvoir Admin</span>
+                              <span>Admin</span>
                             </button>
                           )}
 
@@ -403,7 +400,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
             {/* Bottom Group Management Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-100">
               <span className="text-xs text-slate-400">
-                Groupe créé le {activeGroup.createdAt} • ID: {activeGroup.id}
+                Groupe créé le {activeGroup.createdAt} • Code: {activeGroup.code}
               </span>
 
               <div className="flex items-center gap-3">
@@ -412,7 +409,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Quitter ce groupe</span>
+                  <span>{t('groups.leaveGroup')}</span>
                 </button>
 
                 {isCurrentOwner && (
@@ -421,17 +418,37 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                     className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition cursor-pointer shadow-xs"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Supprimer le groupe</span>
+                    <span>{t('groups.deleteGroup')}</span>
                   </button>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="lg:col-span-8 bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4">
-            <Users className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-base font-bold text-slate-800">Sélectionnez un groupe</h3>
-            <p className="text-xs text-slate-500">Choisissez un groupe dans la colonne de gauche pour afficher ses membres et ses paramètres.</p>
+          <div className="lg:col-span-8 bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center space-y-4 shadow-xs">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
+              <Users className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">{t('groups.noGroup')}</h3>
+              <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">{t('groups.noGroupDesc')}</p>
+            </div>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{t('groups.createFirst')}</span>
+              </button>
+              <button
+                onClick={() => setIsJoinModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4 text-indigo-600" />
+                <span>{t('groups.joinWithCode')}</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -446,8 +463,8 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   <Plus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Créer un Nouveau Groupe</h3>
-                  <p className="text-xs text-slate-500">Vous en serez automatiquement le Créateur / Propriétaire</p>
+                  <h3 className="text-base font-bold text-slate-900">{t('groups.modalCreateTitle')}</h3>
+                  <p className="text-xs text-slate-500">{t('groups.modalCreateSubtitle')}</p>
                 </div>
               </div>
               <button
@@ -460,30 +477,30 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
 
             <form onSubmit={handleCreateSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nom du groupe *</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">{t('groups.groupNameLabel')} *</label>
                 <input
                   type="text"
                   required
                   value={newGroupName}
                   onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="Ex: Pôle Sécurité & IA 2026"
+                  placeholder={t('groups.groupNamePlaceholder')}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Description pédagogique</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">{t('groups.groupDescLabel')}</label>
                 <textarea
                   rows={3}
                   value={newGroupDesc}
                   onChange={(e) => setNewGroupDesc(e.target.value)}
-                  placeholder="Objectifs du groupe, public cible, thématiques abordées..."
+                  placeholder={t('groups.groupDescPlaceholder')}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Icône du groupe</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">{t('groups.groupIconLabel')}</label>
                 <div className="flex items-center gap-2">
                   {['🛡️', '🚀', '💼', '🎓', '🤖', '⚡', '🌟', '📊'].map((emoji) => (
                     <button
@@ -513,7 +530,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   disabled={!newGroupName.trim()}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs disabled:opacity-50 cursor-pointer"
                 >
-                  Créer le groupe
+                  {t('groups.btnCreate')}
                 </button>
               </div>
             </form>
@@ -531,8 +548,8 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">Rejoindre un Groupe</h3>
-                  <p className="text-xs text-slate-500">Entrez le code ou collez le lien d'invitation</p>
+                  <h3 className="text-base font-bold text-slate-900">{t('groups.modalJoinTitle')}</h3>
+                  <p className="text-xs text-slate-500">{t('groups.modalJoinSubtitle')}</p>
                 </div>
               </div>
               <button
@@ -549,14 +566,14 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
             <form onSubmit={handleJoinSubmit} className="p-6 space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  Code du groupe (6 caractères) ou Lien
+                  {t('groups.joinCodeLabel')}
                 </label>
                 <input
                   type="text"
                   required
                   value={joinCodeInput}
                   onChange={(e) => setJoinCodeInput(e.target.value)}
-                  placeholder="Ex: CYBER9 ou https://eduvibe.ai/?join=CYBER9"
+                  placeholder={t('groups.joinCodePlaceholder')}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-xs"
                 />
               </div>
@@ -584,7 +601,7 @@ export const GroupsDashboard: React.FC<GroupsDashboardProps> = ({ onStartVisio }
                   disabled={!joinCodeInput.trim()}
                   className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs disabled:opacity-50 cursor-pointer"
                 >
-                  Rejoindre
+                  {t('groups.btnJoin')}
                 </button>
               </div>
             </form>

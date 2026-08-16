@@ -14,6 +14,7 @@ import { PRESET_COURSES } from './data/defaultCourses';
 import { exportCourseToPPTX } from './utils/pptxExport';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthAndGroupProvider, useAuthAndGroup } from './context/AuthAndGroupContext';
+import { fetchFirestoreCourses, saveFirestoreCourse } from './services/firebase';
 import { Loader2 } from 'lucide-react';
 
 const STORAGE_KEY_COURSES = 'eduvibe_courses_v2';
@@ -39,6 +40,46 @@ function AppContent() {
     }
     return PRESET_COURSES;
   });
+
+  // Sync courses with backend and Firestore on load / user login
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const loadRemoteCourses = async () => {
+      try {
+        const res = await fetch('/api/courses');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
+            setCoursesList((prev) => {
+              const map = new Map<string, CoursePayload>();
+              prev.forEach((c) => map.set(c.id, c));
+              data.courses.forEach((c: CoursePayload) => map.set(c.id, c));
+              return Array.from(map.values());
+            });
+          }
+        }
+      } catch (e) {
+        // ignore offline
+      }
+
+      try {
+        const fbCourses = await fetchFirestoreCourses(currentUser?.id);
+        if (fbCourses && fbCourses.length > 0) {
+          setCoursesList((prev) => {
+            const map = new Map<string, CoursePayload>();
+            prev.forEach((c) => map.set(c.id, c));
+            fbCourses.forEach((c: CoursePayload) => map.set(c.id, c));
+            return Array.from(map.values());
+          });
+        }
+      } catch (e) {
+        // ignore offline
+      }
+    };
+
+    loadRemoteCourses();
+  }, [isAuthenticated, currentUser?.id]);
 
   const [currentCourse, setCurrentCourse] = useState<CoursePayload>(() => coursesList[0] || PRESET_COURSES[0]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
@@ -128,6 +169,16 @@ function AppContent() {
     setCurrentSlideIndex(0);
     // Switch directly to slide viewer to view results!
     setActiveTab('slides');
+
+    // Persist to Firestore and Server Database
+    saveFirestoreCourse(newCourse).catch(console.warn);
+    try {
+      fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: newCourse }),
+      }).catch(console.warn);
+    } catch {}
   };
 
   const handleSelectPreset = (course: CoursePayload) => {
@@ -139,6 +190,16 @@ function AppContent() {
   const handleUpdateCourse = (updated: CoursePayload) => {
     setCurrentCourse(updated);
     setCoursesList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+
+    // Persist updates
+    saveFirestoreCourse(updated).catch(console.warn);
+    try {
+      fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: updated }),
+      }).catch(console.warn);
+    } catch {}
   };
 
   const handleImportCourses = (imported: CoursePayload[]) => {
@@ -147,6 +208,7 @@ function AppContent() {
       setCurrentCourse(imported[0]);
       setCurrentSlideIndex(0);
       setActiveTab('slides');
+      imported.forEach((c) => saveFirestoreCourse(c).catch(console.warn));
     }
   };
 

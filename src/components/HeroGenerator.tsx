@@ -1,78 +1,79 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
-  Layers,
-  Palette,
-  Clock,
-  Globe,
-  Briefcase,
-  ChevronRight,
   Zap,
   CheckCircle2,
+  BookOpen,
+  ArrowRight,
+  Loader2,
   AlertCircle,
-  FileText,
-  Play,
-  RotateCw
+  HelpCircle,
+  Video,
+  Presentation,
+  Palette,
+  Globe,
+  Briefcase,
+  Layers,
+  Sliders,
+  Target,
+  MessageSquare,
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { CoursePayload, CourseTheme } from '../types';
-import {
-  COURSE_THEMES,
-  PRESET_COURSES,
-  TOPIC_SUGGESTIONS_BY_LANG,
-  INDUSTRIES_BY_LANG,
-} from '../data/defaultCourses';
+import { COURSE_THEMES, DEFAULT_COURSES } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
-import { generateSmartFallbackCourse, generateCourseWithClientGemini } from '../utils/courseGenerator';
+import {
+  generateCourseWithClientGemini,
+  generateSmartFallbackCourse,
+  CourseGeneratorOptions
+} from '../utils/courseGenerator';
 
 interface HeroGeneratorProps {
   onCourseGenerated: (course: CoursePayload) => void;
-  onSelectPreset: (course: CoursePayload) => void;
   currentCourse: CoursePayload;
 }
 
-export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
-  onCourseGenerated,
-  onSelectPreset,
-  currentCourse,
-}) => {
-  const { language: currentLang, t } = useLanguage();
-
-  const [topic, setTopic] = useState('');
+export const HeroGenerator: React.FC<HeroGeneratorProps> = ({ onCourseGenerated, currentCourse }) => {
+  const { language, t } = useLanguage();
+  const [topic, setTopic] = useState<string>('');
   const [audienceLevel, setAudienceLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Intermediate');
   const [slideCount, setSlideCount] = useState<number>(5);
   const [moduleLang, setModuleLang] = useState<string>('Français');
-  const [industry, setIndustry] = useState<string>('');
+  const [industry, setIndustry] = useState<string>('Technologie & Digital');
   const [selectedTheme, setSelectedTheme] = useState<CourseTheme['id']>('indigo');
+
+  // Advanced customization states
+  const [objective, setObjective] = useState<string>('skills');
+  const [tone, setTone] = useState<string>('interactive');
+  const [sessionFormat, setSessionFormat] = useState<string>('workshop');
+  const [customDirectives, setCustomDirectives] = useState<string>('');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
-  const [statusMessage, setStatusMessage] = useState<{ type: 'info' | 'error' | 'success'; text: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Synchronize suggestions & defaults when global language changes
-  useEffect(() => {
-    const defaultTopicMap = {
-      fr: 'Cybersécurité en télétravail : Phishing & VPN',
-      en: 'Remote Work Cybersecurity: Phishing & VPNs',
-      vi: 'An toàn thông tin & Kỹ năng làm việc từ xa',
-    };
-    const defaultLangMap = {
-      fr: 'Français',
-      en: 'English',
-      vi: 'Tiếng Việt',
-    };
-    const defaultIndustryMap = {
-      fr: 'Général & Tertiaire',
-      en: 'General & Corporate Services',
-      vi: 'Tổng hợp & Dịch vụ Doanh nghiệp',
-    };
+  const topicSuggestions = [
+    'Cybersécurité & Hygiène Numérique',
+    'IA Générative & Prompting en Entreprise',
+    'Management Hybride & Feedback',
+    'Négociation Commerciale Complexe',
+    'Conformité RGPD & Données Sensibles',
+    'Gestion de Crise & Résilience',
+  ];
 
-    setTopic(defaultTopicMap[currentLang] || defaultTopicMap.fr);
-    setModuleLang(defaultLangMap[currentLang] || 'Français');
-    setIndustry(defaultIndustryMap[currentLang] || 'General');
-  }, [currentLang]);
-
-  const topicSuggestions = TOPIC_SUGGESTIONS_BY_LANG[currentLang] || TOPIC_SUGGESTIONS_BY_LANG.en;
-  const industrySuggestions = INDUSTRIES_BY_LANG[currentLang] || INDUSTRIES_BY_LANG.en;
+  const industrySuggestions = [
+    'Technologie & Digital',
+    'Banque, Finance & Assurance',
+    'Santé & Industrie Pharma',
+    'Conseil & Services B2B',
+    'Commerce & E-commerce',
+    'Ressources Humaines & Management',
+    'Industrie & Énergie',
+    'Secteur Public & Éducation',
+  ];
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +107,19 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
       let isFallbackResult = false;
       let noticeMsg = '';
 
+      const generatorParams: CourseGeneratorOptions = {
+        topic,
+        audienceLevel,
+        slideCount,
+        language: moduleLang,
+        industry,
+        themeId: selectedTheme,
+        objective,
+        tone,
+        sessionFormat,
+        customDirectives,
+      };
+
       // 1. Try server API endpoint
       try {
         const response = await fetch('/api/generate-course', {
@@ -115,12 +129,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
             'x-gemini-api-key': customKey,
           },
           body: JSON.stringify({
-            topic,
-            audienceLevel,
-            slideCount,
-            language: moduleLang,
-            industry,
-            themeId: selectedTheme,
+            ...generatorParams,
             model: customModel,
           }),
         });
@@ -134,7 +143,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
           }
         }
       } catch (fetchErr) {
-        console.warn('Server endpoint /api/generate-course unavailable or error, using client generator:', fetchErr);
+        console.warn('Server endpoint /api/generate-course unavailable, switching to client generator:', fetchErr);
       }
 
       // 2. Client-side generator fallback if server was unavailable / static deployment
@@ -143,12 +152,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
           try {
             // Direct browser call to Gemini if API key is provided
             generatedCourse = await generateCourseWithClientGemini(customKey, {
-              topic,
-              audienceLevel,
-              slideCount,
-              language: moduleLang,
-              industry,
-              themeId: selectedTheme,
+              ...generatorParams,
               model: customModel,
             });
             isFallbackResult = false;
@@ -160,7 +164,11 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
               slideCount,
               moduleLang,
               industry,
-              selectedTheme
+              selectedTheme,
+              objective,
+              tone,
+              sessionFormat,
+              customDirectives
             );
             isFallbackResult = true;
             noticeMsg = geminiClientErr?.message;
@@ -173,7 +181,11 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
             slideCount,
             moduleLang,
             industry,
-            selectedTheme
+            selectedTheme,
+            objective,
+            tone,
+            sessionFormat,
+            customDirectives
           );
           isFallbackResult = true;
         }
@@ -207,7 +219,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 py-6 px-4 sm:px-6">
       {/* Top Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-8 sm:p-12 shadow-xs">
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-12 shadow-xs">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-96 h-96 rounded-full bg-indigo-50 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-96 h-96 rounded-full bg-slate-100 blur-3xl pointer-events-none" />
 
@@ -251,10 +263,10 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
       {/* Main Generator Form & Customization Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Generator Form (2 cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600">
+              <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
@@ -262,7 +274,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                 <p className="text-xs text-slate-500">{t('generator.paramsSubtitle')}</p>
               </div>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200">
+            <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200">
               Gemini 3.7 Flash
             </span>
           </div>
@@ -271,7 +283,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
             {/* Topic Input */}
             <div className="space-y-2">
               <label htmlFor="course-topic-input" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                {t('generator.topicLabel')}
+                {t('generator.topicLabel')} *
               </label>
               <div className="relative">
                 <input
@@ -293,7 +305,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                     key={sug}
                     type="button"
                     onClick={() => setTopic(sug)}
-                    className="text-[11px] px-2.5 py-1 rounded-full bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 text-slate-600 border border-slate-200 font-medium transition"
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 text-slate-600 border border-slate-200 font-medium transition cursor-pointer"
                   >
                     {sug}
                   </button>
@@ -301,7 +313,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
               </div>
             </div>
 
-            {/* Level & Slide Count */}
+            {/* Level & Slide Volume Customizer */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Audience Level */}
               <div className="space-y-2">
@@ -321,7 +333,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                         key={lvl}
                         type="button"
                         onClick={() => setAudienceLevel(lvl)}
-                        className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                           audienceLevel === lvl
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -334,31 +346,35 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                 </div>
               </div>
 
-              {/* Slide Count */}
+              {/* Slide Count Customizer with Interactive Range & Pills */}
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center justify-between">
                   <span>{t('generator.slidesVolume')}</span>
-                  <span className="text-indigo-600 font-mono font-bold">{slideCount} {t('generator.slidesUnit')}</span>
+                  <span className="text-indigo-600 font-mono font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                    {slideCount} {t('generator.slidesUnit')} (~{slideCount * 8} min)
+                  </span>
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[3, 5, 8].map((count) => {
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[3, 5, 8, 10, 12].map((count) => {
                     const desc = {
-                      3: t('generator.volumeExpress'),
-                      5: t('generator.volumeStandard'),
-                      8: t('generator.volumeComplete'),
+                      3: '3 Flash',
+                      5: '5 Standard',
+                      8: '8 Approfondi',
+                      10: '10 Complet',
+                      12: '12 Master',
                     };
                     return (
                       <button
                         key={count}
                         type="button"
                         onClick={() => setSlideCount(count)}
-                        className={`py-2 px-2 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`py-1.5 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                           slideCount === count
                             ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                             : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                         }`}
                       >
-                        {count} ({desc[count as keyof typeof desc]})
+                        {desc[count as keyof typeof desc]}
                       </button>
                     );
                   })}
@@ -377,7 +393,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                   id="course-language-select"
                   value={moduleLang}
                   onChange={(e) => setModuleLang(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium shadow-xs"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium shadow-xs cursor-pointer"
                 >
                   <option value="Français">🇫🇷 Français</option>
                   <option value="English">🇬🇧 English</option>
@@ -396,7 +412,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                   id="course-industry-select"
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium shadow-xs"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium shadow-xs cursor-pointer"
                 >
                   {industrySuggestions.map((ind) => (
                     <option key={ind} value={ind}>
@@ -405,6 +421,106 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Advanced Customization Collapsible Accordion */}
+            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/70 space-y-4">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="w-full flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-indigo-600" />
+                  <span>Personnalisation Pédagogique Avancée (Objectif, Ton, Format & Directives)</span>
+                </div>
+                {showAdvancedOptions ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+              </button>
+
+              {showAdvancedOptions && (
+                <div className="space-y-4 pt-2 border-t border-slate-200 animate-in fade-in">
+                  {/* Objective & Tone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                        <Target className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{t('generator.objectiveLabel')}</span>
+                      </label>
+                      <select
+                        value={objective}
+                        onChange={(e) => setObjective(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs font-medium text-slate-800 shadow-xs cursor-pointer"
+                      >
+                        <option value="skills">{t('generator.objSkills')}</option>
+                        <option value="awareness">{t('generator.objAwareness')}</option>
+                        <option value="leadership">{t('generator.objLeadership')}</option>
+                        <option value="sales">{t('generator.objSales')}</option>
+                        <option value="crisis">{t('generator.objCrisis')}</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                        <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{t('generator.toneLabel')}</span>
+                      </label>
+                      <select
+                        value={tone}
+                        onChange={(e) => setTone(e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs font-medium text-slate-800 shadow-xs cursor-pointer"
+                      >
+                        <option value="interactive">{t('generator.toneInteractive')}</option>
+                        <option value="executive">{t('generator.toneExecutive')}</option>
+                        <option value="operational">{t('generator.toneOperational')}</option>
+                        <option value="educational">{t('generator.toneEducational')}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Format & Duration */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>{t('generator.formatLabel')}</span>
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: 'micro', label: t('generator.formatMicro') },
+                        { id: 'demo', label: t('generator.formatDemo') },
+                        { id: 'workshop', label: t('generator.formatWorkshop') },
+                        { id: 'intensive', label: t('generator.formatIntensive') },
+                      ].map((fmt) => (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => setSessionFormat(fmt.id)}
+                          className={`p-2 rounded-xl text-xs font-semibold border text-center transition cursor-pointer ${
+                            sessionFormat === fmt.id
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {fmt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Free text custom directives */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      {t('generator.customDirectivesLabel')}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={customDirectives}
+                      onChange={(e) => setCustomDirectives(e.target.value)}
+                      placeholder={t('generator.customDirectivesPlaceholder')}
+                      className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:ring-2 focus:ring-indigo-500 shadow-xs"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Color Theme Selector */}
@@ -419,7 +535,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                     key={thm.id}
                     type="button"
                     onClick={() => setSelectedTheme(thm.id)}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       selectedTheme === thm.id
                         ? 'bg-indigo-50/60 border-indigo-600 shadow-xs ring-1 ring-indigo-600'
                         : 'bg-white border-slate-200 hover:bg-slate-50'
@@ -451,100 +567,94 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
                 ) : (
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
                 )}
-                <span className="font-medium">{statusMessage.text}</span>
+                <span>{statusMessage.text}</span>
               </div>
             )}
 
             {/* Submit Button */}
             <button
-              id="btn-generate-training"
               type="submit"
               disabled={isLoading || !topic.trim()}
-              className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-sm flex items-center justify-center gap-3 disabled:opacity-50 transition active:scale-[0.99]"
+              className="w-full py-4 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer group"
             >
               {isLoading ? (
                 <>
-                  <RotateCw className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin text-white" />
                   <span>{loadingStep || t('generator.submitLoading')}</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
-                  <span>{t('generator.submitBtn')}</span>
-                  <ChevronRight className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5 text-indigo-200 group-hover:rotate-12 transition-transform" />
+                  <span>{t('generator.submitBtn')} ({slideCount} slides)</span>
+                  <ArrowRight className="w-4 h-4 text-indigo-200 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
         </div>
 
-        {/* Right Sidebar: Active Course Card & Preset Library */}
+        {/* Right Sidebar (1 col): Preset Courses & Active Course */}
         <div className="space-y-6">
-          {/* Active Course Card Preview */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+          {/* Active Course Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
                 {t('sidebar.activeCourse')}
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200">
-                {currentCourse.audienceLevel}
+              <span className="text-xs text-slate-500 font-medium">
+                {currentCourse.estimatedDuration} {t('sidebar.minutes')}
               </span>
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-slate-900 line-clamp-2">
-                {currentCourse.title}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                {currentCourse.tagline || currentCourse.description}
-              </p>
+              <h3 className="text-base font-bold text-slate-900 line-clamp-2">{currentCourse.title}</h3>
+              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{currentCourse.description}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 pt-2 border-t border-slate-100 font-medium">
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
               <div className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{currentCourse.slides.length} {t('generator.slidesUnit')}</span>
+                <Presentation className="w-4 h-4 text-indigo-600" />
+                <span>{currentCourse.slides.length} slides</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-indigo-600" />
-                <span>~{currentCourse.estimatedDuration} {t('sidebar.minutes')}</span>
+                <HelpCircle className="w-4 h-4 text-emerald-600" />
+                <span>{currentCourse.quiz.length} questions</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-indigo-600" />
+                <span>Live Ready</span>
               </div>
             </div>
           </div>
 
-          {/* Preset Modules Library */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-sm font-bold text-slate-900">{t('sidebar.presetTitle')}</h3>
+          {/* Preset Courses List */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-indigo-600" />
+                <span>{t('sidebar.presetTitle')}</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t('sidebar.presetDesc')}</p>
             </div>
-            <p className="text-xs text-slate-500">
-              {t('sidebar.presetDesc')}
-            </p>
 
-            <div className="space-y-2.5">
-              {PRESET_COURSES.map((preset) => (
+            <div className="space-y-3">
+              {DEFAULT_COURSES.map((crs) => (
                 <div
-                  key={preset.id}
-                  id={`preset-card-${preset.id}`}
-                  onClick={() => onSelectPreset(preset)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                    currentCourse.id === preset.id
-                      ? 'bg-indigo-50/70 border-indigo-600 shadow-xs ring-1 ring-indigo-600/30'
-                      : 'bg-slate-50/50 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  key={crs.id}
+                  onClick={() => onCourseGenerated(crs)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                    currentCourse.id === crs.id
+                      ? 'bg-indigo-50/60 border-indigo-600 shadow-2xs ring-1 ring-indigo-600'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300 hover:bg-slate-100/80'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1">
-                      {preset.title}
-                    </h4>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white text-slate-600 border border-slate-200 font-medium flex-shrink-0">
-                      {preset.language}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-800 line-clamp-1">{crs.title}</span>
+                    <span className="text-[10px] text-indigo-600 font-semibold flex-shrink-0 ml-2">
+                      {crs.slides.length} slides
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">
-                    {preset.topic} • {preset.slides.length} {t('generator.slidesUnit')} • {preset.quiz.length} Qs
-                  </p>
+                  <p className="text-[11px] text-slate-500 line-clamp-2">{crs.description}</p>
                 </div>
               ))}
             </div>
@@ -554,4 +664,3 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({
     </div>
   );
 };
-

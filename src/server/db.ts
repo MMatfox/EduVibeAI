@@ -286,6 +286,19 @@ class DatabaseManager {
     return newGroup;
   }
 
+  public upsertGroup(group: TrainingGroup): TrainingGroup {
+    const idx = this.data.groups.findIndex(
+      (g) => g.id === group.id || (g.code && g.code === group.code)
+    );
+    if (idx !== -1) {
+      this.data.groups[idx] = { ...this.data.groups[idx], ...group };
+    } else {
+      this.data.groups.unshift(group);
+    }
+    this.saveToDisk();
+    return group;
+  }
+
   public joinGroup(groupIdOrCode: string, user: UserProfile): { success: boolean; message: string; group?: TrainingGroup } {
     const group = this.getGroupByCode(groupIdOrCode) || this.getGroupById(groupIdOrCode);
     if (!group) {

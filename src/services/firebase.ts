@@ -355,3 +355,28 @@ export const createFirestoreGroup = async (group: TrainingGroup): Promise<void> 
     console.error('Failed to save group to Firestore:', err);
   }
 };
+
+// 7. Firestore Courses Sync
+export const fetchFirestoreCourses = async (userId?: string): Promise<CoursePayload[]> => {
+  if (!db) return [];
+  try {
+    const querySnapshot = await getDocs(collection(db, 'courses'));
+    const courses: CoursePayload[] = [];
+    querySnapshot.forEach((docSnap) => {
+      courses.push(docSnap.data() as CoursePayload);
+    });
+    return courses;
+  } catch (err) {
+    console.warn('Failed to fetch Firestore courses:', err);
+    return [];
+  }
+};
+
+export const saveFirestoreCourse = async (course: CoursePayload): Promise<void> => {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, 'courses', course.id), course);
+  } catch (err) {
+    console.warn('Failed to save course to Firestore:', err);
+  }
+};

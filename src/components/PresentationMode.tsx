@@ -18,7 +18,7 @@ import {
   MousePointer,
   RotateCcw
 } from 'lucide-react';
-import { CoursePayload, Slide } from '../types';
+import { CoursePayload, Slide, getSlideBullets, getSlideVisualConcept } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
 import { audioEffects } from '../utils/audioEffects';
 
@@ -38,6 +38,8 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
   const slides = course.slides || [];
   const currentSlide = slides[currentSlideIndex] || slides[0];
   const theme = COURSE_THEMES[course.themeId] || COURSE_THEMES.indigo;
+
+  const slideBullets = getSlideBullets(currentSlide);
 
   const [showNotes, setShowNotes] = useState<boolean>(true);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
@@ -135,7 +137,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
   };
 
   const renderVisualConcept = () => {
-    const vc = currentSlide.visualConcept;
+    const vc = getSlideVisualConcept(currentSlide);
     if (!vc) return null;
 
     switch (vc.type) {
@@ -359,7 +361,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
                 </h3>
 
                 <ul className="space-y-4">
-                  {currentSlide.bullets.map((bullet, idx) => (
+                  {slideBullets.map((bullet, idx) => (
                     <li key={idx} className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                         {idx + 1}
@@ -372,8 +374,26 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({
                 </ul>
               </div>
 
-              {/* Right 5 Cols: Visual Concept */}
-              <div className="lg:col-span-5 flex flex-col justify-center">
+              {/* Right 5 Cols: Visual Concept & Thematic Image */}
+              <div className="lg:col-span-5 flex flex-col justify-center space-y-4">
+                {currentSlide.imageUrl && (
+                  <div className="relative rounded-3xl overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900 aspect-video max-h-56">
+                    <img
+                      src={currentSlide.imageUrl}
+                      alt={currentSlide.imagePrompt || currentSlide.title}
+                      className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none">
+                      <span className="text-xs font-semibold text-slate-200 truncate max-w-[80%]">
+                        {currentSlide.imagePrompt || currentSlide.categoryBadge}
+                      </span>
+                      <span className="text-[10px] font-bold text-indigo-300 bg-indigo-950/80 border border-indigo-500/40 px-2 py-0.5 rounded-full">
+                        ✨ IA Vision
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {renderVisualConcept()}
               </div>
             </div>

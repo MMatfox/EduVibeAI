@@ -3,7 +3,7 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
-import { generateSmartFallbackCourse, getCurriculumBlueprint } from './src/utils/courseGenerator';
+import { generateSmartFallbackCourse, getCurriculumBlueprint, resolveThematicSlideImage, repairAndParseJson } from './src/utils/courseGenerator';
 
 dotenv.config();
 
@@ -340,18 +340,36 @@ STRICT QUALITY RULES:
 
 Return valid JSON adhering to the schema.`;
 
-    const response = await callGeminiWithRetry(ai, {
-      model: 'gemini-3.7-flash',
-      contents: prompt,
-      config: {
-        systemInstruction: `You are EduVibe AI, an expert corporate course designer. Always produce high quality instructional content in ${language}. Ensure tone is highly professional and actionable. Return valid JSON only.`,
-        responseMimeType: 'application/json',
-      },
-    }, 3);
+    const candidateModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.7-flash'];
+    let parsedData: any = null;
+    let lastErr: any = null;
 
-    const rawText = response.text || '{}';
-    const cleanedText = cleanJsonText(rawText);
-    const parsedData = JSON.parse(cleanedText);
+    for (const candidate of candidateModels) {
+      try {
+        const response = await callGeminiWithRetry(ai, {
+          model: candidate,
+          contents: prompt,
+          config: {
+            systemInstruction: `You are EduVibe AI, an expert corporate course designer. Always produce high quality instructional content in ${language}. Ensure tone is highly professional and actionable. Return valid JSON only.`,
+            responseMimeType: 'application/json',
+            maxOutputTokens: 8192,
+          },
+        }, 2);
+
+        const rawText = response.text || '{}';
+        parsedData = repairAndParseJson(rawText);
+        if (parsedData && Array.isArray(parsedData.slides) && parsedData.slides.length > 0) {
+          break;
+        }
+      } catch (e) {
+        lastErr = e;
+        console.warn(`Server candidate ${candidate} failed:`, e);
+      }
+    }
+
+    if (!parsedData || !Array.isArray(parsedData.slides) || parsedData.slides.length === 0) {
+      throw lastErr || new Error('All Gemini model candidates failed');
+    }
 
     let rawSlides: any[] = Array.isArray(parsedData.slides) ? parsedData.slides : [];
 
@@ -391,11 +409,47 @@ Return valid JSON adhering to the schema.`;
       estimatedDuration: parsedData.estimatedDuration || targetCount * 8,
       themeId,
       createdAt: new Date().toISOString(),
-      slides: rawSlides.slice(0, targetCount).map((s: any, idx: number) => ({
-        ...s,
-        id: `slide-${idx + 1}-${Date.now()}`,
-        slideNumber: idx + 1,
-      })),
+      slides: rawSlides.slice(0, targetCount).map((s: any, idx: number) => {
+        const sNum = idx + 1;
+        const defaultImg = resolveThematicSlideImage(sNum);
+        const safeBullets = Array.isArray(s.bullets)
+          ? s.bullets
+          : Array.isArray(s.bulletPoints)
+          ? s.bulletPoints
+          : Array.isArray(s.points)
+          ? s.points
+          : typeof s.bullets === 'string'
+          ? [s.bullets]
+          : [
+              `Maîtriser les principes fondamentaux de ${topic}`,
+              `Appliquer la méthode opérationnelle avec rigueur`,
+              `Mesurer les résultats et valider les acquis`,
+            ];
+
+        return {
+          ...s,
+          id: `slide-${sNum}-${Date.now()}`,
+          slideNumber: sNum,
+          title: s.title || `Diapositive ${sNum} : ${topic}`,
+          subtitle: s.subtitle || `Guide pratique et mise en œuvre pour le niveau ${audienceLevel}`,
+          categoryBadge: s.categoryBadge || `Module ${sNum}`,
+          bullets: safeBullets,
+          imageUrl: s.imageUrl || defaultImg.url,
+          imagePrompt: s.imagePrompt || defaultImg.prompt,
+          visualConcept: s.visualConcept || {
+            type: 'takeaway',
+            title: s.title || topic,
+            badge: s.categoryBadge || 'Point Clé',
+            details: safeBullets.slice(0, 3),
+          },
+          trainerNotes: s.trainerNotes || {
+            timeMinutes: 8,
+            keyTalkingPoints: safeBullets.slice(0, 2),
+            oralScript: `Dans cette diapositive consacrée à ${s.title || topic}, nous abordons les leviers essentiels pour votre niveau ${audienceLevel}.`,
+            interactivePrompt: `Tour de table : Quelle est votre réaction sur ce point ?`,
+          },
+        };
+      }),
       quiz: (parsedData.quiz && parsedData.quiz.length > 0 ? parsedData.quiz : []).map((q: any, idx: number) => ({
         ...q,
         id: `quiz-${idx + 1}-${Date.now()}`,

@@ -1,4 +1,5 @@
 import { CoursePayload, CourseTheme } from '../types';
+import { resolveThematicSlideImage } from '../utils/courseGenerator';
 
 export const COURSE_THEMES: Record<CourseTheme['id'], CourseTheme> = {
   indigo: {
@@ -87,7 +88,7 @@ export const COURSE_THEMES: Record<CourseTheme['id'], CourseTheme> = {
   },
 };
 
-export const PRESET_COURSES: CoursePayload[] = [
+const RAW_PRESET_COURSES: CoursePayload[] = [
   {
     id: 'cybersec-remote-fr',
     title: 'Cybersécurité en Télétravail : Les Nouveaux Réflexes Clés',
@@ -742,6 +743,18 @@ export const INDUSTRIES_BY_LANG: Record<'fr' | 'en' | 'vi', string[]> = {
     'Bán lẻ & Thương mại điện tử',
   ],
 };
+
+export const PRESET_COURSES: CoursePayload[] = RAW_PRESET_COURSES.map((course) => ({
+  ...course,
+  slides: course.slides.map((s, idx) => {
+    const img = resolveThematicSlideImage(s.slideNumber || idx + 1);
+    return {
+      ...s,
+      imageUrl: s.imageUrl || img.url,
+      imagePrompt: s.imagePrompt || img.prompt,
+    };
+  }),
+}));
 
 export const DEFAULT_COURSES = PRESET_COURSES;
 

@@ -25,9 +25,10 @@ import {
   Save,
   ArrowUp,
   ArrowDown,
-  Tv
+  Tv,
+  Image as ImageIcon
 } from 'lucide-react';
-import { CoursePayload, Slide } from '../types';
+import { CoursePayload, Slide, getSlideBullets, getSlideVisualConcept } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
 import { PresentationMode } from './PresentationMode';
@@ -69,18 +70,25 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   const currentSlide = slides[currentSlideIndex] || slides[0];
   const theme = COURSE_THEMES[course.themeId] || COURSE_THEMES.indigo;
 
+  const slideBullets = getSlideBullets(currentSlide);
+  const visualConcept = getSlideVisualConcept(currentSlide);
+
   // Editable state buffer
   const [editTitle, setEditTitle] = useState(currentSlide?.title || '');
   const [editSubtitle, setEditSubtitle] = useState(currentSlide?.subtitle || '');
-  const [editBullets, setEditBullets] = useState<string[]>(currentSlide?.bullets || []);
+  const [editBullets, setEditBullets] = useState<string[]>(getSlideBullets(currentSlide));
   const [editOralScript, setEditOralScript] = useState(currentSlide?.trainerNotes?.oralScript || '');
+  const [editImageUrl, setEditImageUrl] = useState(currentSlide?.imageUrl || '');
+  const [editImagePrompt, setEditImagePrompt] = useState(currentSlide?.imagePrompt || '');
 
   useEffect(() => {
     if (currentSlide) {
       setEditTitle(currentSlide.title);
       setEditSubtitle(currentSlide.subtitle);
-      setEditBullets([...currentSlide.bullets]);
+      setEditBullets(getSlideBullets(currentSlide));
       setEditOralScript(currentSlide.trainerNotes?.oralScript || '');
+      setEditImageUrl(currentSlide.imageUrl || '');
+      setEditImagePrompt(currentSlide.imagePrompt || '');
     }
   }, [currentSlideIndex, currentSlide]);
 
@@ -203,6 +211,8 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
       title: editTitle,
       subtitle: editSubtitle,
       bullets: editBullets.filter((b) => b.trim().length > 0),
+      imageUrl: editImageUrl.trim() || currentSlide.imageUrl,
+      imagePrompt: editImagePrompt.trim() || currentSlide.imagePrompt,
       trainerNotes: {
         ...currentSlide.trainerNotes,
         oralScript: editOralScript,
@@ -551,7 +561,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                 </div>
               ) : (
                 <ul className="space-y-3.5">
-                  {currentSlide.bullets.map((point, index) => (
+                  {slideBullets.map((point, index) => (
                     <li key={index} className="flex items-start gap-3 text-slate-800 text-sm sm:text-base leading-relaxed">
                       <span
                         className="flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white shadow-xs mt-0.5 bg-indigo-600"
@@ -566,54 +576,79 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
               )}
             </div>
 
-            {/* Right: Visual Concept / Metric / Framework Card (5 cols) */}
-            <div className="md:col-span-5 flex flex-col">
+            {/* Right: Visual Concept / Metric / Thematic Image Card (5 cols) */}
+            <div className="md:col-span-5 flex flex-col space-y-3">
+              {/* Thematic Slide Photo / Illustration */}
+              {currentSlide.imageUrl && (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-900 group aspect-video max-h-48">
+                  <img
+                    src={currentSlide.imageUrl}
+                    alt={currentSlide.imagePrompt || currentSlide.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20 pointer-events-none" />
+                  
+                  {/* Floating AI Vision Pill */}
+                  <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                    <span className="text-[10px] font-semibold text-white/95 truncate max-w-[80%] drop-shadow-md">
+                      {currentSlide.imagePrompt || currentSlide.categoryBadge}
+                    </span>
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-indigo-300 bg-slate-900/80 backdrop-blur-md px-2 py-0.5 rounded-full border border-indigo-500/30">
+                      <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
+                      <span>Visuel IA</span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Visual Card with Concept / Metric */}
               <div
-                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-xs relative overflow-hidden"
+                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5 flex flex-col justify-between space-y-3 shadow-xs relative overflow-hidden"
               >
                 {/* Visual Concept Badge */}
                 <div className="flex items-center justify-between">
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md text-white shadow-xs bg-indigo-600"
+                    className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md text-white shadow-xs bg-indigo-600"
                     style={{ backgroundColor: theme.primaryColor || '#4f46e5' }}
                   >
-                    {currentSlide.visualConcept?.badge || currentSlide.visualConcept?.type?.toUpperCase()}
+                    {visualConcept?.badge || visualConcept?.type?.toUpperCase() || 'CONCEPT'}
                   </span>
                   <div className="text-slate-400">
-                    {currentSlide.visualConcept?.type === 'metric' && <TrendingUp className="w-4 h-4" />}
-                    {currentSlide.visualConcept?.type === 'comparison' && <Columns className="w-4 h-4" />}
-                    {currentSlide.visualConcept?.type === 'framework' && <Workflow className="w-4 h-4" />}
-                    {currentSlide.visualConcept?.type === 'quote' && <Quote className="w-4 h-4" />}
+                    {visualConcept?.type === 'metric' && <TrendingUp className="w-4 h-4" />}
+                    {visualConcept?.type === 'comparison' && <Columns className="w-4 h-4" />}
+                    {visualConcept?.type === 'framework' && <Workflow className="w-4 h-4" />}
+                    {visualConcept?.type === 'quote' && <Quote className="w-4 h-4" />}
                   </div>
                 </div>
 
                 {/* Concept Main Visual Graphic */}
-                <div className="space-y-3 my-auto py-2 text-center">
-                  <h4 className="text-sm font-bold text-slate-900">
-                    {currentSlide.visualConcept?.title}
+                <div className="space-y-2 my-auto text-center">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                    {visualConcept?.title}
                   </h4>
 
                   {/* Metric Display if type == metric */}
-                  {currentSlide.visualConcept?.metric && (
-                    <div className="space-y-1">
+                  {visualConcept?.metric && (
+                    <div className="space-y-0.5">
                       <div
-                        className="text-4xl sm:text-5xl font-extrabold tracking-tight text-indigo-600"
+                        className="text-3xl sm:text-4xl font-extrabold tracking-tight text-indigo-600"
                         style={{ color: theme.primaryColor || '#4f46e5' }}
                       >
-                        {currentSlide.visualConcept.metric}
+                        {visualConcept.metric}
                       </div>
-                      {currentSlide.visualConcept.metricLabel && (
-                        <p className="text-xs text-slate-500 font-medium">
-                          {currentSlide.visualConcept.metricLabel}
+                      {visualConcept.metricLabel && (
+                        <p className="text-[11px] text-slate-500 font-medium line-clamp-2">
+                          {visualConcept.metricLabel}
                         </p>
                       )}
                     </div>
                   )}
 
                   {/* Details Bullet List */}
-                  {currentSlide.visualConcept?.details && currentSlide.visualConcept.details.length > 0 && (
-                    <div className="space-y-2 text-left pt-2 border-t border-slate-200/80">
-                      {currentSlide.visualConcept.details.map((detail, idx) => (
+                  {visualConcept?.details && visualConcept.details.length > 0 && (
+                    <div className="space-y-1.5 text-left pt-2 border-t border-slate-200/80">
+                      {visualConcept.details.map((detail, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-xs text-slate-600">
                           <span
                             className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-indigo-600"
@@ -626,10 +661,29 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
                   )}
                 </div>
 
-                {/* Footer Tag */}
-                <div className="text-[10px] text-slate-400 font-mono text-right">
-                  EduVibe Visual Concept Engine
-                </div>
+                {/* Edit Mode Image Fields */}
+                {isEditingSlide && (
+                  <div className="pt-3 border-t border-slate-200 space-y-2">
+                    <label className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3 text-indigo-600" />
+                      <span>URL de l'image & Thème</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editImageUrl}
+                      onChange={(e) => setEditImageUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-900"
+                    />
+                    <input
+                      type="text"
+                      value={editImagePrompt}
+                      onChange={(e) => setEditImagePrompt(e.target.value)}
+                      placeholder="Description du visuel IA..."
+                      className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs text-slate-600"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

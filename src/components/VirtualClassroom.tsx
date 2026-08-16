@@ -21,7 +21,7 @@ import {
   Sliders,
   ChevronDown
 } from 'lucide-react';
-import { CoursePayload, Slide } from '../types';
+import { CoursePayload, Slide, getSlideBullets, getSlideVisualConcept } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuthAndGroup } from '../context/AuthAndGroupContext';
@@ -45,6 +45,13 @@ export const VirtualClassroom: React.FC<VirtualClassroomProps> = ({
 }) => {
   const { language, t } = useLanguage();
   const { currentUser, activeGroup, userGroups, setActiveGroup } = useAuthAndGroup();
+
+  const slides = course?.slides || [];
+  const currentSlide = slides[currentSlideIndex] || slides[0];
+  const theme = COURSE_THEMES[course?.themeId] || COURSE_THEMES.indigo;
+
+  const slideBullets = getSlideBullets(currentSlide);
+  const visualConcept = getSlideVisualConcept(currentSlide);
 
   const [layoutMode, setLayoutMode] = useState<'split' | 'slide-focus' | 'video-focus'>('split');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
@@ -71,9 +78,6 @@ export const VirtualClassroom: React.FC<VirtualClassroomProps> = ({
   // Room Identifier: Group-based or Session Code
   const groupRoomId = activeGroup ? `EduVibe-Group-${activeGroup.code}` : `EduVibe-${sessionCode}`;
   const meetingUrl = `https://meet.jit.si/${encodeURIComponent(groupRoomId)}#config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
-
-  const currentSlide = course.slides[currentSlideIndex] || course.slides[0];
-  const theme = COURSE_THEMES[course.themeId] || COURSE_THEMES.indigo;
 
   const totalVotes = activePoll.options.reduce((acc, curr) => acc + curr.votes, 0);
 
@@ -302,7 +306,7 @@ export const VirtualClassroom: React.FC<VirtualClassroomProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 my-4 relative z-10 items-stretch">
               {/* Left Bullets */}
               <div className="md:col-span-7 space-y-2">
-                {currentSlide.bullets.map((bullet, idx) => (
+                {slideBullets.map((bullet, idx) => (
                   <div
                     key={idx}
                     className="flex items-start gap-2.5 p-2.5 rounded-xl bg-white/80 border border-slate-200/80 shadow-2xs"
@@ -318,42 +322,57 @@ export const VirtualClassroom: React.FC<VirtualClassroomProps> = ({
                 ))}
               </div>
 
-              {/* Right Visual Concept Box */}
-              {currentSlide.visualConcept && (
-                <div
-                  className="md:col-span-5 p-4 rounded-2xl border bg-white/90 shadow-xs flex flex-col justify-between"
-                  style={{ borderColor: theme.borderAccent || '#e2e8f0' }}
-                >
-                  <div>
-                    <span
-                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block mb-1.5"
-                      style={{
-                        backgroundColor: theme.badgeBg || '#eef2ff',
-                        color: theme.badgeText || '#4338ca',
-                      }}
-                    >
-                      {currentSlide.visualConcept.badge || 'CONCEPT CLÉ'}
+              {/* Right Visual Concept & Thematic Image Box */}
+              <div className="md:col-span-5 space-y-3 flex flex-col justify-between">
+                {currentSlide.imageUrl && (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-xs bg-slate-900 aspect-video max-h-36">
+                    <img
+                      src={currentSlide.imageUrl}
+                      alt={currentSlide.imagePrompt || currentSlide.title}
+                      className="w-full h-full object-cover opacity-90"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
+                    <span className="absolute bottom-1.5 left-2 right-2 text-[9px] font-semibold text-white/95 truncate">
+                      {currentSlide.imagePrompt || currentSlide.categoryBadge}
                     </span>
-                    <h4 className="text-xs font-bold text-slate-900">
-                      {currentSlide.visualConcept.title}
-                    </h4>
+                  </div>
+                )}
 
-                    {currentSlide.visualConcept.metric && (
+                {visualConcept && (
+                  <div
+                    className="p-3.5 rounded-2xl border bg-white/90 shadow-xs flex-1 flex flex-col justify-between"
+                    style={{ borderColor: theme.borderAccent || '#e2e8f0' }}
+                  >
+                    <div>
+                      <span
+                        className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md inline-block mb-1"
+                        style={{
+                          backgroundColor: theme.badgeBg || '#eef2ff',
+                          color: theme.badgeText || '#4338ca',
+                        }}
+                      >
+                        {visualConcept.badge || 'CONCEPT CLÉ'}
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        {visualConcept.title}
+                      </h4>
+
+                    {visualConcept.metric && (
                       <div className="my-2">
                         <span
                           className="text-2xl font-black tracking-tight"
                           style={{ color: theme.primaryColor }}
                         >
-                          {currentSlide.visualConcept.metric}
+                          {visualConcept.metric}
                         </span>
                         <p className="text-[10px] text-slate-500 font-semibold">
-                          {currentSlide.visualConcept.metricLabel}
+                          {visualConcept.metricLabel}
                         </p>
                       </div>
                     )}
 
                     <ul className="space-y-1 mt-2 text-[11px] text-slate-600">
-                      {currentSlide.visualConcept.details?.map((det, i) => (
+                      {visualConcept.details?.map((det, i) => (
                         <li key={i} className="flex items-center gap-1.5">
                           <span className="text-indigo-600 font-bold">•</span>
                           <span className="line-clamp-2">{det}</span>
@@ -363,6 +382,7 @@ export const VirtualClassroom: React.FC<VirtualClassroomProps> = ({
                   </div>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Slide Navigation Controls */}

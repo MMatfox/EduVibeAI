@@ -163,6 +163,1246 @@
   ],
   "courses": [
     {
+      "id": "gen-1786902235012",
+      "title": "Les tests en développement",
+      "tagline": "Formation interactive sur Les tests en développement",
+      "description": "Module généré par IA (8 diapositives) pour niveau Intermediate",
+      "topic": "Les tests en développement",
+      "audienceLevel": "Intermediate",
+      "language": "Français",
+      "industry": "Technologie & Digital",
+      "estimatedDuration": 64,
+      "themeId": "slate",
+      "createdAt": "2026-08-16T17:43:55.012Z",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "theme": "Cadrage & Enjeux Stratégiques",
+          "title": "La Qualité Logicielle comme Moteur de Croissance",
+          "visualConcept": "metric",
+          "visualConceptDetails": {
+            "title": "Le Coût Exponentiel des Anomalies (Règle de Boehm)",
+            "metrics": [
+              {
+                "value": "1x",
+                "label": "Coût de correction en phase de spécification / conception"
+              },
+              {
+                "value": "15x",
+                "label": "Coût de correction lors de la phase d'implémentation active"
+              },
+              {
+                "value": "100x",
+                "label": "Coût de correction après mise en production et impact client"
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Réduction radicale du Time-to-Market** : L'automatisation des tests élimine les goulots d'étranglement de QA manuelle en fin de cycle, permettant des releases quotidiennes sécurisées.",
+            "**Préservation de la marge opérationnelle** : Détecter les régressions de manière proactive dans la pipeline CI/CD évite les crises en production, hautement coûteuses en support et image de marque.",
+            "**Facteur de vélocité technique** : Une suite de tests robuste agit comme un filet de sécurité dynamique, libérant les développeurs de la peur de casser le code existant lors de refactoring stratégiques."
+          ],
+          "trainerNotes": {
+            "context": "Introduction immersive pour capter l'attention des Tech Leads et Engineering Managers.",
+            "oralScript": "Bienvenue à tous. Commençons par une vérité brute : tester n'est pas une tâche de fin de projet, c'est le cœur même de votre vitesse de livraison. Regardez cette métrique classique mais implacable. Un bug trouvé en production coûte cent fois plus cher à corriger qu'à la conception. Dans notre secteur digital ultra-compétitif, la stabilité est l'accélérateur ultime. Aujourd'hui, nous allons transformer votre vision du test pour en faire votre meilleur outil de productivité commerciale.",
+            "interactionPrompt": "Selon vous, quelle est la principale barrière psychologique qui empêche vos équipes de tester systématiquement ? Le manque de temps, ou le manque d'outillage approprié ?"
+          },
+          "id": "slide-1-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Vision stratégique, cadrage exécutif et alignement des équipes dirigeantes"
+        },
+        {
+          "slideNumber": 2,
+          "theme": "Diagnostic des Risques & Pièges Courants",
+          "title": "Les Dérives de l'Ingénierie de Test",
+          "visualConcept": "comparison",
+          "visualConceptDetails": {
+            "leftColumn": {
+              "title": "Pratiques Anti-Patterns Typiques",
+              "items": [
+                "L'anti-pattern du Cône de Glace : Trop de tests E2E lents, pas assez de tests unitaires rapides.",
+                "Indicateurs de couverture factices (100% de code coverage mais aucune assertion réelle).",
+                "Dépendance directe aux bases de données et API tierces durant les tests locaux."
+              ]
+            },
+            "rightColumn": {
+              "title": "Parades & Solutions Systémiques",
+              "items": [
+                "Inverser la pyramide pour centraliser l'effort sur des tests unitaires et d'intégration isolés.",
+                "Instaurer des revues de tests et des métriques de Mutation Testing pour évaluer la pertinence.",
+                "Généraliser l'usage de doublures de test (Mocks, Stubs) et d'environnements conteneurisés éphémères."
+              ]
+            }
+          },
+          "bulletPoints": [
+            "**Le piège des Tests Flaky (instables)** : Les tests qui échouent de manière intermittente détruisent la confiance des équipes et paralysent les déploiements continus.",
+            "**La dette technique silencieuse** : Écrire du code non testable (fort couplage, singletons globaux) force l'équipe à avancer à l'aveugle.",
+            "**L'illusion de la couverture absolue** : Privilégier la quantité de lignes exécutées plutôt que la validation des scénarios critiques de transition d'états métier."
+          ],
+          "trainerNotes": {
+            "context": "Phase de prise de conscience des erreurs courantes en entreprise.",
+            "oralScript": "Nous avons tous déjà connu ce fameux test 'flaky' qui passe au vert uniquement quand on relance la pipeline trois fois de suite. C'est un poison pour votre productivité. Pourquoi ? Parce que l'équipe finit par ignorer les alertes du système. Regardons ensemble ce tableau comparatif. Notre but durant cet atelier est de passer d'une approche réactive et fragile à une architecture robuste où chaque test possède un objectif de conception précis et déterministe.",
+            "interactionPrompt": "Levez la main si vous avez actuellement au moins un test désactivé ou ignoré dans vos pipelines de déploiement à cause de son instabilité."
+          },
+          "id": "slide-2-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Diagnostic des risques opérationnels, détection des pièges et cyber-bouclier"
+        },
+        {
+          "slideNumber": 3,
+          "theme": "Concepts Fondamentaux & Architecture",
+          "title": "La Pyramide des Tests & Principes F.I.R.S.T.",
+          "visualConcept": "framework",
+          "visualConceptDetails": {
+            "title": "La Pyramide des Tests Modernes",
+            "steps": [
+              "TESTS E2E (10%) : Parcours utilisateurs complets, Cypress/Playwright, validations critiques de bout en bout.",
+              "TESTS D'INTÉGRATION (30%) : Interaction entre composants, bases de données en mémoire, contrats d'API.",
+              "TESTS UNITAIRES (60%) : Logique métier pure, fonctions isolées, exécution en millisecondes."
+            ]
+          },
+          "bulletPoints": [
+            "**Fast (Rapides)** : Vos tests doivent s'exécuter en quelques secondes pour être intégrés dans la boucle de feedback locale du développeur.",
+            "**Independent (Indépendants)** : Aucun test ne doit dépendre du résultat ou de l'état laissé par un autre test pour éviter les faux négatifs.",
+            "**Repeatable (Répétables)** : Le résultat doit être identique en local, sur la CI, à midi ou à minuit, sans dépendance externe variable.",
+            "**Self-validating (Auto-validés)** : Le test échoue ou réussit de manière binaire, sans nécessiter d'analyse manuelle des fichiers de logs.",
+            "**Timely (Opportuns)** : Écrits au plus près du code de production, idéalement juste avant (TDD) ou pendant l'implémentation."
+          ],
+          "trainerNotes": {
+            "context": "Apport théorique structurant sur l'architecture et les caractéristiques d'un bon test.",
+            "oralScript": "Pour structurer notre code, nous devons obéir à une hiérarchie stricte. C'est la pyramide des tests de Mike Cohn. Plus on monte, plus les tests sont lents, coûteux et fragiles. Plus on descend, plus ils sont rapides et précis. Pour que ces tests soient efficaces, appliquez les principes F.I.R.S.T. Retenez bien l'indépendance : chaque test doit nettoyer ses propres données de test pour ne pas polluer le scénario suivant.",
+            "interactionPrompt": "Observez votre suite de tests actuelle. Ressemble-t-elle à cette pyramide, ou plutôt à un sablier ou un cône inversé ?"
+          },
+          "id": "slide-3-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Architecture technique moderne et socle de systèmes interconnectés"
+        },
+        {
+          "slideNumber": 4,
+          "theme": "Framework Opérationnel en 3 Piliers",
+          "title": "La Méthode AAA : Structurer chaque Cas de Test",
+          "visualConcept": "flow",
+          "visualConceptDetails": {
+            "steps": [
+              {
+                "phase": "ARRANGE (Préparer)",
+                "description": "Initialiser le système sous test, configurer les mocks, injecter les variables requises et définir l'état initial."
+              },
+              {
+                "phase": "ACT (Agir)",
+                "description": "Déclencher l'action ou appeler la méthode métier spécifique que l'on souhaite auditer."
+              },
+              {
+                "phase": "ASSERT (Vérifier)",
+                "description": "Comparer le résultat obtenu ou le nouvel état du système avec le comportement attendu via des assertions strictes."
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Lisibilité standardisée** : Structurer visuellement chaque fichier de test avec ces trois blocs distincts facilite la maintenance par d'autres développeurs.",
+            "**Principe d'assertion unique** : Viser une intention logique par test. Si un test contient trop d'assertions diverses, scindez-le pour faciliter le diagnostic post-échec.",
+            "**Isolation des données de test** : Ne jamais réutiliser d'objets globaux partagés sans réinitialisation explicite dans l'étape 'Arrange'."
+          ],
+          "trainerNotes": {
+            "context": "Explication de la méthode AAA (Arrange, Act, Assert) pour l'écriture de tests lisibles et maintenables.",
+            "oralScript": "Comment écrit-on un test propre et professionnel ? Nous utilisons le framework universel AAA : Arrange, Act, Assert. C'est l'équivalent du protocole scientifique en laboratoire. On prépare l'environnement, on réalise l'expérience, on observe les résultats. Si vous ouvrez vos tests aujourd'hui et que vous ne pouvez pas distinguer ces trois phases en moins de deux secondes, alors votre test est trop complexe et doit être refactorisé.",
+            "interactionPrompt": "Voyez-vous comment appliquer cette structure AAA sur un composant complexe de votre application actuelle ?"
+          },
+          "id": "slide-4-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Framework méthodologique standardisé et procédures SOPs opérationnelles"
+        },
+        {
+          "slideNumber": 5,
+          "theme": "Protocole d’Exécution & Checklist Terrain",
+          "title": "La Routine de Validation Dev & CI/CD",
+          "visualConcept": "takeaway",
+          "visualConceptDetails": {
+            "title": "Checklist de Validation Qualité avant Merge",
+            "points": [
+              "Validation locale via Git Pre-commit Hooks (tests unitaires rapides uniquement).",
+              "Interdiction stricte d'introduire des variables d'environnement 'hardcodées'.",
+              "Couverture minimale de 80% requise sur les nouvelles branches de fonctionnalités.",
+              "Aucun test flaky toléré : mise en quarantaine immédiate et analyse de cause racine."
+            ]
+          },
+          "bulletPoints": [
+            "**Le garde-fou du Pre-commit** : Bloquer les commits locaux si les tests unitaires fondamentaux échouent, économisant du temps de calcul sur la CI.",
+            "**La politique du 'Boy Scout Rule'** : Améliorer ou écrire au moins un test pour chaque portion de code modifiée ou bug corrigé.",
+            "**La revue de code centrée sur les tests** : Interdire la validation d'une Pull Request si celle-ci ne contient pas les tests unitaires et d'intégration correspondants."
+          ],
+          "trainerNotes": {
+            "context": "Mise en place d'une routine opérationnelle stricte pour automatiser la qualité au quotidien.",
+            "oralScript": "Écrire des tests ne suffit pas, il faut un protocole d'exécution rigoureux. Intégrons cela à nos rituels quotidiens. Cette checklist est votre bouclier. Si un développeur pousse du code sans test de non-régression, le système doit rejeter automatiquement la branche. C'est une question de respect du travail collectif et de maintien de la vélocité à long terme.",
+            "interactionPrompt": "Qui parmi vous utilise déjà des pre-commit hooks pour lancer les tests automatiquement en local avant de pousser sur GitHub ou GitLab ?"
+          },
+          "id": "slide-5-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Checklist de validation qualité et protocole d’exécution terrain"
+        },
+        {
+          "slideNumber": 6,
+          "theme": "Étude de Cas Réelle & Scénario Immersif",
+          "title": "Cas d'Étude : Panne Majeure sur la Passerelle de Paiement",
+          "visualConcept": "comparison",
+          "visualConceptDetails": {
+            "leftColumn": {
+              "title": "La Situation Initiale (Incident)",
+              "items": [
+                "Mise en production d'une mise à jour de l'API de facturation.",
+                "Crash total du tunnel d'achat lors de l'utilisation de cartes étrangères.",
+                "Aucune couverture de test d'intégration sur les cas d'erreur de l'API tierce (Stripe)."
+              ]
+            },
+            "rightColumn": {
+              "title": "La Solution Appliquée",
+              "items": [
+                "Écriture de tests de contrat d'API avec WireMock pour simuler les réponses d'erreur.",
+                "Mise en place d'un mécanisme de 'Circuit Breaker' testé unitairement.",
+                "Zéro downtime constaté lors des trois mises à jour suivantes."
+              ]
+            }
+          },
+          "bulletPoints": [
+            "**Le problème initial** : Les développeurs testaient manuellement le 'happy path' (parcours idéal) mais négligeaient les cas d'erreurs réseaux et de limites de transactions.",
+            "**Le coût de l'incident** : 45 000 € de perte de chiffre d'affaires en 3 heures, dégradation de la confiance utilisateur et stress intense de l'équipe de garde.",
+            "**Leçons apprises** : Toujours mocker les dépendances externes avec des scénarios de pannes réseau réels pour s'assurer de la résilience du code."
+          ],
+          "trainerNotes": {
+            "context": "Analyse rétrospective d'un échec technique réel pour valoriser l'importance stratégique du test.",
+            "oralScript": "Analysons ce cas concret d'une fintech partenaire. Un simple changement d'API externe non testé a bloqué l'intégralité des paiements hors Europe pendant trois heures. Pourquoi ? Parce qu'ils testaient uniquement les succès en local. En introduisant des tests d'intégration avec simulation d'erreurs réseaux, l'application est devenue résiliente. Le système gère désormais la panne de façon transparente pour l'utilisateur.",
+            "interactionPrompt": "Comment vos systèmes actuels réagissent-ils lorsqu'une API tierce indispensable (paiement, envoi d'emails) tombe soudainement en panne ?"
+          },
+          "id": "slide-6-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Cellule de crise opérationnelle, gestion de l’incident et monitoring"
+        },
+        {
+          "slideNumber": 7,
+          "theme": "Outils Numériques, Automatisation & Accélération IA",
+          "title": "L'Écosystème Moderne du Test & IA Générative",
+          "visualConcept": "framework",
+          "visualConceptDetails": {
+            "title": "Stack Technologique Recommandée",
+            "steps": [
+              "Écriture & Exécution : Jest, Vitest, JUnit, PyTest pour la rapidité d'exécution.",
+              "Observabilité & Qualité : SonarQube pour l'analyse statique, Stryker pour le Mutation Testing.",
+              "Génération IA : GitHub Copilot / GPT prompts ciblés pour échafauder le code de test répétitif."
+            ]
+          },
+          "bulletPoints": [
+            "**L'IA comme accélérateur de boilerplate** : Utiliser l'IA pour générer la structure AAA et les jeux de données de test (fakers), permettant aux humains de se concentrer sur les cas d'usage complexes.",
+            "**Analyse de Mutation (Mutation Testing)** : Modifier artificiellement votre code de production (ex: changer un '>' en '<') pour s'assurer qu'au moins un de vos tests échoue.",
+            "**Mocking intelligent avec Mock Service Worker (MSW)** : Intercepter les requêtes HTTP au niveau réseau pour garantir des tests d'intégration stables et robustes."
+          ],
+          "trainerNotes": {
+            "context": "Présentation des technologies modernes et de l'usage intelligent de l'IA pour automatiser la QA.",
+            "oralScript": "Ne voyez plus la rédaction des tests comme une corvée rébarbative. Avec l'avènement des IA génératives, vous pouvez lui déléguer l'écriture du code de préparation (le boilerplate). Un bon prompt lui demandant de générer 5 cas limites sur une fonction métier vous fait gagner des heures. Combinez cela à des outils innovants de Mutation Testing pour garantir l'efficacité de vos assertions.",
+            "interactionPrompt": "Combien d'entre vous utilisent déjà GitHub Copilot ou ChatGPT spécifiquement pour générer des cas de tests unitaires ?"
+          },
+          "id": "slide-7-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Intelligence artificielle, automatisation des tâches et accélération technologique"
+        },
+        {
+          "slideNumber": 8,
+          "theme": "Communication d’Influence & Alignement",
+          "title": "Valoriser les KPI de Test auprès du Business",
+          "visualConcept": "takeaway",
+          "visualConceptDetails": {
+            "title": "Traduire la Technique en Valeur Business",
+            "points": [
+              "Présenter le taux de bugs bloquants évités plutôt que le pourcentage brut de couverture.",
+              "Mettre en avant le gain de vélocité de déploiement (passer de 1 release/mois à 5 releases/semaine).",
+              "Négocier 20% du temps de sprint dédié à la maintenance et au refactoring de la suite de tests."
+            ]
+          },
+          "bulletPoints": [
+            "**Changer la narration technique** : Au lieu de demander 'du budget pour du code coverage', démontrez comment la suite de tests réduit le temps de résolution des anomalies (MTTR).",
+            "**Alignement OKR** : Associer la stabilité de l'application à la rétention client (Churn rate) et aux objectifs clés des équipes de Product Management.",
+            "**Culture du partage** : Célébrer les déploiements réussis sans heurts et remercier publiquement les développeurs qui améliorent la robustesse globale du produit."
+          ],
+          "trainerNotes": {
+            "context": "Clôture de la session sur l'aspect humain, politique et managérial de la qualité logicielle.",
+            "oralScript": "Pour finir, rappelez-vous que la qualité n'est pas qu'un sujet technique, c'est un choix politique d'entreprise. Vous devez convaincre vos décideurs business. Ne leur parlez pas de couverture de code à 80%. Parlez-leur de diminution drastique du temps d'interruption de service, de fluidité des livraisons et de satisfaction des clients finaux. C'est ainsi que vous obtiendrez le temps et les ressources nécessaires pour faire de vos tests un véritable levier de compétitivité.",
+            "interactionPrompt": "Quelle est la première action concrète que vous allez mettre en place dès demain matin pour améliorer la culture du test dans votre équipe ?"
+          },
+          "id": "slide-8-1786902235012",
+          "imageUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Leadership d’influence, prise de parole inspirante et négociation"
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Quelle est la principale recommandation de la Pyramide des Tests concernant la répartition des différents types de tests ?",
+          "options": [
+            "A) Avoir une majorité de tests de bout en bout (E2E) car ils simulent fidèlement l'expérience utilisateur finale.",
+            "B) Avoir une majorité de tests unitaires rapides et isolés, complétés par une quantité modérée de tests d'intégration et une minorité de tests E2E.",
+            "C) Éliminer totalement les tests d'intégration pour ne faire que des tests unitaires couplés à des tests de sécurité.",
+            "D) Répartir équitablement (33% chacun) les ressources et le temps de calcul sur les trois types de tests."
+          ],
+          "correctAnswer": "B",
+          "explanation": "La pyramide des tests de Mike Cohn préconise une large base de tests unitaires rapides et peu coûteux à maintenir, une couche intermédiaire d'intégration pour valider les interactions de composants, et un sommet étroit de tests E2E pour les parcours critiques, afin d'optimiser le temps d'exécution globale et de simplifier le diagnostic des erreurs.",
+          "id": "quiz-1-1786902235012"
+        },
+        {
+          "question": "Dans le cadre de la structure AAA (Arrange-Act-Assert), que se passe-t-il spécifiquement lors de la phase 'Arrange' ?",
+          "options": [
+            "A) On exécute la fonction ou l'algorithme métier principal.",
+            "B) On vérifie la valeur retournée par le système à l'aide de bibliothèques d'assertions.",
+            "C) On prépare et configure l'état initial, les objets requis, les variables et les simulacres (mocks) indispensables au test.",
+            "D) On nettoie la base de données après l'exécution du test."
+          ],
+          "correctAnswer": "C",
+          "explanation": "La phase 'Arrange' consiste à mettre en place l'environnement et à initialiser les données nécessaires au déroulement du test. C'est l'étape de préparation indispensable pour que le test s'exécute dans un contexte contrôlé et déterministe.",
+          "id": "quiz-2-1786902235012"
+        },
+        {
+          "question": "Qu'est-ce qu'un test qualifié de 'Flaky' et quel est son impact sur le flux de développement ?",
+          "options": [
+            "A) Un test obsolète qui a été commenté dans le code source.",
+            "B) Un test qui réussit ou échoue de façon intermittente sans changement du code, détruisant ainsi la confiance de l'équipe envers la pipeline CI/CD.",
+            "C) Un test unitaire extrêmement rapide s'exécutant en moins d'une milliseconde.",
+            "D) Un test d'intégration qui valide spécifiquement la sécurité du protocole de paiement."
+          ],
+          "correctAnswer": "B",
+          "explanation": "Un test flaky (ou instable) introduit du doute car ses résultats ne sont pas déterministes (souvent causé par des accès réseaux concurrentiels ou des partages d'états non réinitialisés). Cela incite les équipes à ignorer les alertes réelles de la pipeline de déploiement et ralentit considérablement la vélocité.",
+          "id": "quiz-3-1786902235012"
+        },
+        {
+          "question": "Pourquoi l'analyse de mutation (Mutation Testing) est-elle supérieure à la simple analyse de couverture de code (Code Coverage) ?",
+          "options": [
+            "A) Elle permet d'accélérer l'exécution des tests de manière automatique grâce à l'IA.",
+            "B) Elle ne nécessite pas d'écrire des assertions pour valider le code de production.",
+            "C) Elle injecte de légères modifications (mutants) dans le code pour vérifier si au moins un test échoue, mesurant ainsi la réelle pertinence et l'efficacité des assertions.",
+            "D) Elle permet de compiler le code deux fois plus vite."
+          ],
+          "correctAnswer": "C",
+          "explanation": "La couverture de code indique seulement si une ligne a été exécutée par un test, sans prouver que le test vérifie réellement le comportement. Le Mutation Testing modifie le code métier (ex. changeant un opérateur de comparaison). Si aucun test n'échoue face à cette modification, cela révèle une faille de détection dans vos assertions.",
+          "id": "quiz-4-1786902235012"
+        }
+      ]
+    },
+    {
+      "id": "gen-1786901630424",
+      "title": "Les tests unitaires",
+      "tagline": "Formation interactive sur Les tests unitaires",
+      "description": "Module généré par IA (8 diapositives) pour niveau Intermediate",
+      "topic": "Les tests unitaires",
+      "audienceLevel": "Intermediate",
+      "language": "Français",
+      "industry": "Technologie & Digital",
+      "estimatedDuration": 64,
+      "themeId": "slate",
+      "createdAt": "2026-08-16T17:33:50.424Z",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "title": "Cadrage & Enjeux Stratégiques",
+          "subtitle": "Pourquoi les tests unitaires sont le pilier de l'ingénierie moderne",
+          "visualConcept": "metric",
+          "content": {
+            "metrics": [
+              {
+                "value": "x10 à x100",
+                "label": "Facteur de coût",
+                "description": "Différence de coût entre un bug détecté en TU et un bug découvert en production"
+              },
+              {
+                "value": "-40%",
+                "label": "Dette Technique",
+                "description": "Réduction moyenne des temps de maintenance corrective sur les projets couverts"
+              },
+              {
+                "value": "+35%",
+                "label": "Vélocité CI/CD",
+                "description": "Accélération du déploiement continu grâce à la validation automatisée immédiate"
+              }
+            ],
+            "keyTakeaways": [
+              "Le test unitaire n'est pas une option de fin de projet, mais une discipline de design continu",
+              "Filet de sécurité indispensable pour exécuter des refactorings d'architecture sans régression",
+              "Documentation vivante et exécutable garantissant la conformité aux spécifications métiers"
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Bonjour à tous. Bienvenue dans ce workshop dédié aux tests unitaires. Regardez ces chiffres : corriger une anomalie en production coûte jusqu'à cent fois plus cher que de la stopper au moment du commit. Les tests unitaires ne sont pas une tâche administrative rébarbative, c'est votre bouclier stratégique. Ils vous permettent de livrer plus vite, d'oser refactoriser du code vieux de trois ans sans sueurs froides, et de garantir une stabilité sans faille à vos clients.",
+            "pacing": "10 minutes",
+            "interactivePrompt": "Selon vous, dans vos projets actuels, quel pourcentage du temps de développement est absorbé par la résolution de bugs récurrents ?"
+          },
+          "id": "slide-1-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Vision stratégique, cadrage exécutif et alignement des équipes dirigeantes"
+        },
+        {
+          "slideNumber": 2,
+          "title": "Diagnostic des Risques & Pièges Courants",
+          "subtitle": "Disséquer les anti-patterns pour éviter le piège du faux sentiment de sécurité",
+          "visualConcept": "comparison",
+          "content": {
+            "comparison": {
+              "titleLeft": "Anti-Patterns & Pratiques Toxiques",
+              "itemsLeft": [
+                "Tests couplés à l'implémentation interne plutôt qu'au comportement",
+                "Sur-utilisation de Mocks (Mocks de Mocks) rendant le test illisible et fragile",
+                "Couverture de code à 90% sans aucune assertion métier réelle (Assert True)",
+                "Tests dépendants de l'ordre d'exécution ou d'une base de données externe"
+              ],
+              "titleRight": "Approche Corrective & Rigueur",
+              "itemsRight": [
+                "Test des interfaces publiques et des contrats d'API uniquement",
+                "Utilisation ciblée des Stubs/Mocks uniquement aux frontières du système (I/O)",
+                "Mise en place de Quality Gates basés sur la qualité des assertions et le Mutation Score",
+                "Isolation absolue : chaque test instancie son propre contexte de façon hermétique"
+              ]
+            }
+          },
+          "trainerNotes": {
+            "oralScript": "Analysons pourquoi tant de suites de tests finissent par être abandonnées. Le piège classique, c'est le sur-mocking et le couplage aux détails d'implémentation. Si votre test casse à chaque fois que vous renommez une méthode privée, ce n'est pas un bon test, c'est une contrainte inutile. De même, afficher 90% de code coverage avec des 'AssertTrue' vagues donne une fausse illusion de sécurité. Nous allons apprendre à tester le comportement, pas le code ligne par ligne.",
+            "pacing": "15 minutes",
+            "interactivePrompt": "Avez-vous déjà désactivé une suite de tests parce qu'elle échouait de façon aléatoire ('flaky tests') ? Quel en était le facteur déclenchant ?"
+          },
+          "id": "slide-2-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Diagnostic des risques opérationnels, détection des pièges et cyber-bouclier"
+        },
+        {
+          "slideNumber": 3,
+          "title": "Concepts Fondamentaux & Architecture",
+          "subtitle": "Les principes F.I.R.S.T. et le Pattern Arrange-Act-Assert (AAA)",
+          "visualConcept": "framework",
+          "content": {
+            "frameworkName": "Les Piliers du Test Unitaire Propre",
+            "pillars": [
+              {
+                "name": "F.I.R.S.T.",
+                "description": "Fast (rapide), Independent (isolé), Repeatable (déterministe), Self-validating (pass/fail clair), Timely (écrit au bon moment)."
+              },
+              {
+                "name": "Pattern A-A-A",
+                "description": "Structure explicite : ARRANGE (initialiser données/stubs), ACT (exécuter l'action), ASSERT (vérifier l'état/comportement)."
+              },
+              {
+                "name": "Test Doubles",
+                "description": "Différenciation stricte entre Dummy, Stub (réponses prédéfinies), Mock (vérification d'appels) et Fake (implémentation légère)."
+              }
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Pour réussir vos tests, vous devez structurer votre pensée autour du pattern AAA : Arrange, Act, Assert. Si ces trois phases ne sont pas nettement séparées dans votre fichier de code, la lisibilité s'effondre. De plus, gardez toujours en tête l'acronyme F.I.R.S.T. Un test unitaire doit s'exécuter en quelques millisecondes. S'il faut 10 secondes pour lancer votre suite de tests, vos développeurs arrêteront de la lancer en local avant de pusher.",
+            "pacing": "15 minutes",
+            "interactivePrompt": "Pouvez-vous me donner la différence exacte entre un 'Stub' et un 'Mock' dans votre stack actuelle ?"
+          },
+          "id": "slide-3-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Architecture technique moderne et socle de systèmes interconnectés"
+        },
+        {
+          "slideNumber": 4,
+          "title": "Framework Opérationnel en 3 Piliers",
+          "subtitle": "La méthode 3P pour industrialiser la conception de vos suites de tests",
+          "visualConcept": "flow",
+          "content": {
+            "steps": [
+              {
+                "stepNumber": 1,
+                "title": "Pilier 1 : Préparation & Isolation",
+                "description": "Identifier le Single Responsibility Principle (SRP) du composant. Isoler les dépendances externes (BDD, API réseau) via des interfaces d'abstraction."
+              },
+              {
+                "stepNumber": 2,
+                "title": "Pilier 2 : Prototypage des Scénarios (TDD)",
+                "description": "Rédiger le test du cas nominal puis des cas limites (null, valeurs limites, exceptions) selon la boucle Red-Green-Refactor."
+              },
+              {
+                "stepNumber": 3,
+                "title": "Pilier 3 : Pérennisation & Optimisation",
+                "description": "Refactoriser le code du test, supprimer le duplicata de setup via des Builders/Factories, et vérifier l'exécution sous le seuil des 50ms."
+              }
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Voici la méthode 3P que nous allons appliquer durant tout le workshop. Étape 1 : Préparation. On isole strictement le composant. Étape 2 : Prototypage. On passe par les cas limites : que se passe-t-il si la liste est vide ou si le service tiers renvoie une erreur 500 ? Étape 3 : Pérennisation. Le code de test est un code de production de première classe. Il doit être propre, maintenable et rapide.",
+            "pacing": "20 minutes",
+            "interactivePrompt": "Quelle est la plus grande difficulté que vous rencontrez lorsque vous tentez d'appliquer la boucle TDD (Red-Green-Refactor) ?"
+          },
+          "id": "slide-4-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Framework méthodologique standardisé et procédures SOPs opérationnelles"
+        },
+        {
+          "slideNumber": 5,
+          "title": "Protocole d’Exécution & Checklist Terrain",
+          "subtitle": "Les règles de validation obligatoires avant tout Merge Request",
+          "visualConcept": "takeaway",
+          "content": {
+            "takeaways": [
+              "Checklist Limites : Tester systématiquement les valeurs 0, N-1, N, N+1 et les objets Null/Undefined",
+              "Checklist Indépendance : S'assurer qu'aucun état partagé (variables statiques, singleton mutable) ne fuite entre deux tests",
+              "Checklist Vitesse : La suite complète de TU doit s'exécuter sous la barre des 2 minutes en CI/CD",
+              "Checklist Robustesse : Valider que le test échoue réellement en modifiant la logique métier (Mutation Testing)"
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Considérez cette checklist comme la liste de vérification d'un pilote de ligne avant le décollage. Avant d'ouvrir une Merge Request, votre code doit valider chaque point. Avez-vous testé les bornes d'un tableau ? Vos tests s'exécutent-ils de façon totalement indépendante, peu importe leur ordre ? Si vous respectez ces règles, vous éliminerez 95% des régressions accidentelles.",
+            "pacing": "15 minutes",
+            "interactivePrompt": "Avez-vous déjà mis en place des tests de mutation (ex: Stryker ou Pitest) pour vérifier l'efficacité de vos assertions ?"
+          },
+          "id": "slide-5-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Checklist de validation qualité et protocole d’exécution terrain"
+        },
+        {
+          "slideNumber": 6,
+          "title": "Étude de Cas Réelle & Scénario Immersif",
+          "subtitle": "Refactoring sécurisé d'un moteur de calcul de panier e-commerce critique",
+          "visualConcept": "comparison",
+          "content": {
+            "comparison": {
+              "titleLeft": "Situation Initiale (Risquée)",
+              "itemsLeft": [
+                "Méthode monolithique 'calculateTotal()' de 450 lignes interconnectée à la BDD",
+                "0 test unitaire existe ; peurs constantes d'impacter le checkout avant le Black Friday",
+                "Bugs récurrents sur l'application combinée des codes promos et de la TVA"
+              ],
+              "titleRight": "Résultat Après Intervention 3P",
+              "itemsRight": [
+                "Extraction du calcul dans un composant pur sans dépendance BDD",
+                "Écriture de 42 tests unitaires couvrant tous les cas de remises et règles fiscales",
+                "Refactoring complété en 4 heures avec 0 bug détecté lors des pics de charge"
+              ]
+            }
+          },
+          "trainerNotes": {
+            "oralScript": "Prenons un cas réel d'une grande plateforme e-commerce. Le moteur de calcul de panier était un monolithe illisible. Personne n'osait y toucher. Nous avons d'abord extrait la logique métier pure des accès base de données. Puis nous avons écrit 42 tests unitaires couvrant chaque règle de promotion. Résultat : un refactoring complet en 4 heures, et zéro incident survenu pendant le Black Friday. Voilà l'impact business direct des tests unitaires.",
+            "pacing": "20 minutes",
+            "interactivePrompt": "Si vous deviez isoler le module le plus critique et effrayant de votre codebase aujourd'hui, quel serait-il ?"
+          },
+          "id": "slide-6-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Cellule de crise opérationnelle, gestion de l’incident et monitoring"
+        },
+        {
+          "slideNumber": 7,
+          "title": "Outils Numériques, Automatisation & Accélération IA",
+          "subtitle": "Booster la productivité avec la stack moderne et la génération assistée par IA",
+          "visualConcept": "flow",
+          "content": {
+            "steps": [
+              {
+                "stepNumber": 1,
+                "title": "Frameworks Modernes",
+                "description": "Utilisation de Jest, PyTest ou JUnit 5 avec exécution en parallèle et mode Watch local."
+              },
+              {
+                "stepNumber": 2,
+                "title": "Assistance IA (GitHub Copilot/LLM)",
+                "description": "Prompts ciblés pour générer automatiquement les cas aux limites (edge cases) et les jeux de données d'entrées."
+              },
+              {
+                "stepNumber": 3,
+                "title": "Garde-fous Automatises",
+                "description": "Intégration SonarQube, Husky (hooks pre-commit) et rapports de couverture automatique dans GitHub Actions."
+              }
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Aujourd'hui, l'IA change la donne pour l'écriture des tests. Vous pouvez utiliser GitHub Copilot ou un LLM pour générer des jeux de données complexes et identifier des edge cases auxquels vous n'auriez jamais pensé. Mais attention : l'IA doit rédiger les tests sous votre supervision stricte. Combinez cela avec des outils comme PyTest ou Jest et des hooks Git pre-commit, et vous obtenez un workflow ultra-fluide.",
+            "pacing": "15 minutes",
+            "interactivePrompt": "Utilisez-vous déjà l'IA générative pour rédiger des suites de tests ? Quels prompts ont donné les meilleurs résultats ?"
+          },
+          "id": "slide-7-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Intelligence artificielle, automatisation des tâches et accélération technologique"
+        },
+        {
+          "slideNumber": 8,
+          "title": "Communication d’Influence & Alignement",
+          "subtitle": "Savoir vendre la valeur du testing aux décideurs et fédérer l'équipe",
+          "visualConcept": "metric",
+          "content": {
+            "metrics": [
+              {
+                "value": "MTTR -60%",
+                "label": "Temps de résolution",
+                "description": "Métrique clé à présenter au Management pour prouver le gain opérationnel"
+              },
+              {
+                "value": "100%",
+                "label": "Sérénité des Releases",
+                "description": "Disparition des mises en production nocturnes ou le vendredi après-midi"
+              }
+            ],
+            "keyTakeaways": [
+              "Ne parlez pas de 'couverture de code' au Management, parlez de réduction des temps d'indisponibilité et de vélocité",
+              "Mettez en place des sessions de 'Pair Testing' pour former les juniors et harmoniser les standards d'équipe",
+              "Intégrez le coût d'écriture des tests directement dans l'estimation initiale des User Stories"
+            ]
+          },
+          "trainerNotes": {
+            "oralScript": "Enfin, savoir écrire des tests ne suffit pas : il faut savoir défendre ce temps auprès de vos Product Owners et Managers. Ne dites pas 'j'ai besoin de 2 jours pour faire des tests'. Dites 'nous sécurisons le composant pour réduire le temps de livraison global et éviter 3 jours de correctifs post-prod'. Changez le vocabulaire, montrez des métriques de temps de résolution (MTTR) et faites du test un standard culturel indiscutable.",
+            "pacing": "10 minutes",
+            "interactivePrompt": "Comment gérez-vous la pression des délais face au temps nécessaire pour rédiger des tests unitaires de qualité ?"
+          },
+          "id": "slide-8-1786901630424",
+          "imageUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Leadership d’influence, prise de parole inspirante et négociation"
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Dans le cadre du pattern AAA (Arrange-Act-Assert), que doit contenir la phase 'ARRANGE' ?",
+          "options": [
+            "L'appel de la méthode cible à tester",
+            "L'initialisation des objets, configurations et stubs nécessaires au test",
+            "Les vérifications 'assertEquals' et 'verify'",
+            "Le nettoyage de la base de données après l'exécution"
+          ],
+          "correctAnswer": 1,
+          "explanation": "La phase 'Arrange' consiste à préparer l'environnement de test : instancier la classe à tester, créer les données de test et configurer le comportement des stubs.",
+          "id": "quiz-1-1786901630424"
+        },
+        {
+          "question": "Quel est le risque principal lié au 'sur-mocking' (mocking excessif) dans les tests unitaires ?",
+          "options": [
+            "Le test devient trop lent à s'exécuter",
+            "Le test devient couplé aux détails d'implémentation et casse lors de refactorings internes sans bug réel",
+            "Le code de production ne s'exécute plus en environnement de recette",
+            "La couverture de code descend automatiquement à zéro"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Mocker abusivement les méthodes internes ou privées rend le test extrêmement fragile. Le test vérifie 'comment' le code est écrit au lieu de vérifier 'ce qu'il produit' (le comportement).",
+          "id": "quiz-2-1786901630424"
+        },
+        {
+          "question": "Que mesure exactement l'outil de 'Mutation Testing' (ex: Pitest, Stryker) ?",
+          "options": [
+            "Le nombre de lignes de code exécutées par la suite de tests",
+            "La vitesse d'exécution de la suite de tests unitaires",
+            "L'efficacité réelle des assertions en injectant de fausses erreurs (mutants) dans le code métier",
+            "Le niveau de sécurité des dépendances npm ou maven"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Le Mutation Testing modifie légèrement le code source (ex: remplacer un '>' par un '>=') et relance les tests. Si le test ne casse pas, le mutant 'survit', révélant une faiblesse dans les assertions.",
+          "id": "quiz-3-1786901630424"
+        },
+        {
+          "question": "Selon le principe F.I.R.S.T., que signifie la lettre 'I' (Independent) ?",
+          "options": [
+            "Chaque test doit être exécuté par un développeur indépendant",
+            "Les tests ne doivent pas dépendre les uns des autres et doivent pouvoir s'exécuter dans n'importe quel ordre",
+            "Le code doit être écrit sans aucun framework externe",
+            "Les assertions doivent être indépendantes de la plateforme d'intégration continue"
+          ],
+          "correctAnswer": 1,
+          "explanation": "L'indépendance garantit qu'un test ne modifie pas un état global affectant le test suivant. Chaque test doit préparer et nettoyer son propre contexte.",
+          "id": "quiz-4-1786901630424"
+        },
+        {
+          "question": "Quelle est la meilleure approche pour tester un comportement qui interagit avec une BDD externe dans un test unitaire ?",
+          "options": [
+            "Brancher le test directement sur la base de données de production",
+            "Isoler l'accès aux données derrière une interface repository et utiliser une implémentation en mémoire (Fake/Stub) pour le test unitaire",
+            "Supprimer la validation de l'accès aux données dans le test unitaire",
+            "Exécuter le test unitaire uniquement la nuit quand la BDD est disponible"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Pour conserver des tests unitaires rapides et déterministes, les accès BDD réels doivent être isolés et remplacés par des doubles de test (Fake/Stub) via l'injection de dépendance.",
+          "id": "quiz-5-1786901630424"
+        }
+      ]
+    },
+    {
+      "id": "gen-1786901327327",
+      "title": "Les tests unitaires",
+      "tagline": "Formation interactive sur Les tests unitaires",
+      "description": "Module généré par IA (8 diapositives) pour niveau Intermediate",
+      "topic": "Les tests unitaires",
+      "audienceLevel": "Intermediate",
+      "language": "Français",
+      "industry": "Technologie & Digital",
+      "estimatedDuration": 64,
+      "themeId": "slate",
+      "createdAt": "2026-08-16T17:28:47.327Z",
+      "slides": [
+        {
+          "slideNumber": 1,
+          "theme": "Cadrage & Enjeux Stratégiques",
+          "title": "L'Impératif Stratégique des Tests Unitaires",
+          "visualConcept": "metric",
+          "visualData": {
+            "key": "ROI de la Détection Précoce",
+            "value": "-85%",
+            "label": "de coût de correction des anomalies lorsqu'elles sont identifiées durant la phase de développement par rapport à la production."
+          },
+          "bulletPoints": [
+            "**Accélération de la boucle de feedback** : Validation instantanée de la non-régression locale, réduisant le temps d'attente des développeurs de plusieurs heures à quelques secondes.",
+            "**Architecture de code propre** : L'écriture de tests unitaires force une conception modulaire, découplée et conforme aux principes SOLID, notamment l'injection de dépendances.",
+            "**Confiance opérationnelle continue** : Déblocage du déploiement continu (CD) sans validation manuelle systématique, augmentant la fréquence des mises en production."
+          ],
+          "trainerNotes": {
+            "oralScript": "Bonjour à toutes et à tous. Aujourd'hui, nous allons aborder les tests unitaires non pas comme une contrainte administrative ou une corvée d'écriture de code supplémentaire, mais comme le levier de performance ultime de votre équipe technique. Regardez ce chiffre : économiser 85% du coût d'un bug en le capturant dès votre IDE. C'est la différence entre une mise en production sereine un vendredi après-midi et un week-end de crise à patcher des serveurs sous pression. Notre objectif aujourd'hui est d'apprendre à concevoir des tests qui protègent votre business et libèrent votre vélocité de livraison.",
+            "interactivePrompt": "À main levée, qui a déjà dû annuler un déploiement en urgence à cause d'une régression qui aurait pu être évitée par un simple test unitaire ?"
+          },
+          "id": "slide-1-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Vision stratégique, cadrage exécutif et alignement des équipes dirigeantes"
+        },
+        {
+          "slideNumber": 2,
+          "theme": "Diagnostic des Risques & Pièges Courants",
+          "title": "Radiographie des Pièges et Anti-Patterns",
+          "visualConcept": "comparison",
+          "visualData": {
+            "leftColumnTitle": "Anti-Patterns Courants",
+            "rightColumnTitle": "Solutions Recommandées",
+            "comparisonPairs": [
+              {
+                "left": "Tests couplés aux détails d'implémentation (cassent à chaque refactoring interne)",
+                "right": "Tester les comportements et les contrats d'API publics, pas la structure interne"
+              },
+              {
+                "left": "Tests 'Flaky' (instables, échouent de façon aléatoire sans modification de code)",
+                "right": "Éliminer l'accès au réseau, aux bases de données réelles et au temps système non maîtrisé"
+              },
+              {
+                "left": "Surcharges de mocks complexes (on finit par tester le mock, pas le code réel)",
+                "right": "Privilégier les stubs simples ou les 'fakes' réalistes pour les ports d'infrastructure"
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Le piège de la couverture aveugle** : Atteindre 100% de couverture de code (Coverage) avec des assertions vides ou inutiles qui ne vérifient aucune règle métier réelle.",
+            "**Le syndrome du cône de glace** : Surcharger la pyramide des tests en s'appuyant trop sur les tests d'intégration ou de bout-en-bout (E2E), lents et coûteux, au détriment des tests unitaires."
+          ],
+          "trainerNotes": {
+            "oralScript": "Nous avons tous connu cette frustration : vous changez simplement le nom d'une variable privée dans votre classe, et soudain, dix tests unitaires passent au rouge. Pourquoi ? Parce que ces tests souffrent de couplage excessif. Ils épient les rouages internes de votre code au lieu de vérifier ses contrats de sortie. Aujourd'hui, nous allons apprendre à rompre ce couplage. Nous allons voir comment concevoir des tests qui agissent comme un bouclier de sécurité lors de vos refactorings, et non comme un frein qui vous empêche d'évoluer.",
+            "interactivePrompt": "Quel est le pourcentage actuel de tests 'flaky' (instables) dans votre suite de CI/CD ?"
+          },
+          "id": "slide-2-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Diagnostic des risques opérationnels, détection des pièges et cyber-bouclier"
+        },
+        {
+          "slideNumber": 3,
+          "theme": "Concepts Fondamentaux & Architecture",
+          "title": "L'Anatomie d'un Test de Haute Qualité",
+          "visualConcept": "framework",
+          "visualData": {
+            "title": "Le Standard d'Excellence d'un Test Unitaire",
+            "subtitle": "Les fondations techniques d'un test maintenable",
+            "boxes": [
+              {
+                "title": "Principe F.I.R.S.T.",
+                "description": "Fast (Rapide), Independent (Isolé), Repeatable (Déterministe), Self-Validating (Automatisé), Timely (Écrit au bon moment)."
+              },
+              {
+                "title": "Le Pattern AAA",
+                "description": "Arrange (Initialisation des données), Act (Exécution de la méthode ciblée), Assert (Vérification stricte des résultats)."
+              },
+              {
+                "title": "Isolation Hermétique",
+                "description": "Utilisation de bouchons (Stubs) et simulateurs (Mocks) pour remplacer toute dépendance externe non maîtrisée."
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**La règle du comportement unique** : Un bon test ne valide qu'un seul scénario logique à la fois. Si un test échoue, la cause doit être immédiatement identifiable par son nom.",
+            "**Lisibilité comme code de production** : Le code de test doit être traité avec la même rigueur architecturale (DRY, propreté, expressivité) que le code métier."
+          ],
+          "trainerNotes": {
+            "oralScript": "Pour que nos tests soient adoptés et maintenus par nos équipes, ils doivent suivre une structure stricte et prévisible. C'est ici qu'intervient le pattern AAA : Arrange, Act, Assert. C'est la grammaire universelle du test unitaire. Quand un nouveau développeur ouvre votre suite de tests, il doit comprendre en trois secondes ce qui est préparé, quelle action est mesurée, et quel est le résultat attendu. Ajoutez à cela le respect scrupuleux des principes F.I.R.S.T, et vous obtiendrez des tests qui s'exécutent en millisecondes.",
+            "interactivePrompt": "Utilisez-vous déjà systématiquement la séparation visuelle Arrange/Act/Assert dans vos fichiers de tests ?"
+          },
+          "id": "slide-3-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Architecture technique moderne et socle de systèmes interconnectés"
+        },
+        {
+          "slideNumber": 4,
+          "theme": "Framework Opérationnel en 3 Piliers",
+          "title": "Le Framework Opérationnel de Test (3P)",
+          "visualConcept": "flow",
+          "visualData": {
+            "steps": [
+              {
+                "title": "Pillier 1 : Préparation & Isolation",
+                "description": "Isoler la classe testée (SUT) en injectant des doublures de test (Mocks/Stubs) pour bloquer les effets de bord (BDD, API externes)."
+              },
+              {
+                "title": "Pillier 2 : Pilotage par le Comportement",
+                "description": "Rédiger des assertions explicites basées sur les cas d'usage nominaux et les cas limites (Edge Cases, valeurs nulles, exceptions)."
+              },
+              {
+                "title": "Pillier 3 : Pérennisation & Intégration",
+                "description": "Intégrer la suite dans le pipeline CI pour bloquer tout commit ne respectant pas les critères de qualité définis."
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Gestion des effets de bord** : Remplacement des appels réseau par des réponses simulées instantanées via des bibliothèques de Mocking standardisées.",
+            "**Détection précoce dans la CI** : Configuration du pipeline pour que la phase de test unitaire s'exécute avant toute étape de build ou d'analyse statique."
+          ],
+          "trainerNotes": {
+            "oralScript": "Voici notre méthodologie standardisée pour ce workshop. Nous l'appelons le framework '3P'. D'abord, nous préparons l'isolation : aucune base de données ne doit être touchée. Ensuite, nous pilotons par le comportement : on ne teste pas les lignes de code, on teste les règles métier. Enfin, nous pérennisons dans la CI : un test qui ne tourne pas automatiquement à chaque commit n'existe pas. Nous allons appliquer ce flux pas à pas lors de nos exercices pratiques de codage.",
+            "interactivePrompt": "Avez-vous configuré votre environnement de développement pour exécuter vos tests unitaires automatiquement à chaque sauvegarde de fichier ?"
+          },
+          "id": "slide-4-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Framework méthodologique standardisé et procédures SOPs opérationnelles"
+        },
+        {
+          "slideNumber": 5,
+          "theme": "Protocole d’Exécution & Checklist Terrain",
+          "title": "Protocole de Validation et Checklist Quotidienne",
+          "visualConcept": "takeaway",
+          "visualData": {
+            "title": "Checklist de Validation du Développeur",
+            "points": [
+              "Le test s'exécute-t-il en moins de 100 millisecondes ? (Indicateur de vélocité)",
+              "Le test s'exécute-t-il avec le même résultat hors-connexion ? (Indicateur d'isolation)",
+              "Les assertions ciblent-elles le résultat renvoyé plutôt que la méthode interne appelée ? (Indicateur de couplage)",
+              "Le nom du test décrit-il explicitement le contexte, l'action et le résultat attendu ? (Indicateur de clarté)",
+              "Les cas limites (valeurs limites, structures vides, erreurs serveurs simulées) ont-ils été testés ?"
+            ]
+          },
+          "bulletPoints": [
+            "**Le seuil de couverture pragmatique** : Viser 80% de couverture sur le code métier (Domain Core) plutôt que de s'acharner sur le code de configuration sans valeur ajoutée.",
+            "**Introduction au Test de Mutation** : Utiliser occasionnellement des frameworks de mutation (ex: Stryker) pour valider la pertinence réelle de vos assertions."
+          ],
+          "trainerNotes": {
+            "oralScript": "Cette checklist est votre garde-fou quotidien. Avant de soumettre une Pull Request à vos pairs, passez votre code au crible de ces cinq questions simples. Si un seul test met plus d'une seconde à tourner, corrigez-le immédiatement, car la lenteur engendre l'abandon des tests par les développeurs. Nous allons voir comment configurer des seuils automatiques dans nos linters pour que ces critères soient vérifiés de manière transparente et non punitive.",
+            "interactivePrompt": "Parmi ces 5 critères de la checklist, quel est celui qui pose actuellement le plus de difficultés à vos équipes ?"
+          },
+          "id": "slide-5-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Checklist de validation qualité et protocole d’exécution terrain"
+        },
+        {
+          "slideNumber": 6,
+          "theme": "Étude de Cas Réelle & Scénario Immersif",
+          "title": "Cas Réel : Sauvetage de l'API de Tarification d'une FinTech",
+          "visualConcept": "comparison",
+          "visualData": {
+            "leftColumnTitle": "Situation Initiale (Sans Tests Unitaires)",
+            "rightColumnTitle": "Situation Cible (Après Refactoring & Tests)",
+            "comparisonPairs": [
+              {
+                "left": "Régression majeure sur le calcul des devises lors du Black Friday (perte estimée à 45k€)",
+                "right": "Mise en place d'une suite de 120 tests unitaires couvrant tous les taux de change et arrondis"
+              },
+              {
+                "left": "Temps de déploiement d'un correctif : 4 heures (tests manuels fastidieux sur l'environnement de staging)",
+                "right": "Temps de déploiement du correctif : 8 minutes (validation automatique dans la CI/CD)"
+              },
+              {
+                "left": "Peur panique de l'équipe technique à l'idée de modifier la classe 'PricingEngine' de 2500 lignes",
+                "right": "Refactoring de la classe en 5 sous-modules découplés, modifiables en toute sécurité"
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Analyse de la cause racine** : L'ancien système dépendait d'une base de données de taux de change externe en direct, provoquant des échecs de test intermittents en staging.",
+            "**La solution technique** : Isolation du moteur de calcul via le pattern Gateway, permettant de simuler n'importe quel taux instantanément dans les tests unitaires."
+          ],
+          "trainerNotes": {
+            "oralScript": "Analysons ce cas d'école réel survenu chez l'un de nos clients FinTech. Leur moteur de tarification était devenu une boîte noire intouchable. Lors d'un pic d'activité, une modification mineure a corrompu les calculs d'arrondis de devises. Le coût financier a été immédiat. En isolant le code métier de la base de données et en appliquant notre framework en 3 piliers, nous avons réduit le temps de déploiement à 8 minutes. L'équipe a retrouvé la liberté d'innover sans redouter le crash système.",
+            "interactivePrompt": "Avez-vous dans vos projets actuels une 'boîte noire' que personne n'ose modifier par peur de tout casser ?"
+          },
+          "id": "slide-6-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Cellule de crise opérationnelle, gestion de l’incident et monitoring"
+        },
+        {
+          "slideNumber": 7,
+          "theme": "Outils Numériques, Automatisation & Accélération IA",
+          "title": "La Boîte à Outils Moderne et l'Accélération par l'IA",
+          "visualConcept": "framework",
+          "visualData": {
+            "title": "La Stack Technologique du Test de Précision",
+            "subtitle": "Combiner les frameworks leaders et l'intelligence artificielle générative",
+            "boxes": [
+              {
+                "title": "Frameworks de Référence",
+                "description": "JUnit 5 (Java), Jest/Vitest (JS/TS), PyTest (Python). Choix basés sur la vitesse d'exécution et l'écosystème de mocking."
+              },
+              {
+                "title": "Tests de Mutation",
+                "description": "Stryker, Pitest. Ces outils injectent des bugs volontaires dans votre code pour vérifier si vos tests les détectent vraiment."
+              },
+              {
+                "title": "Accélération IA (Copilot/GPT)",
+                "description": "Utilisation de prompts structurés pour générer la structure d'Arrange-Act-Assert et les cas aux limites instantanément."
+              }
+            ]
+          },
+          "bulletPoints": [
+            "**Prompt Blueprint pour l'IA** : 'Agis en expert QA. Génère 5 tests unitaires en utilisant Jest et le pattern AAA pour cette fonction, en incluant les cas limites de valeurs nulles et négatives.'",
+            "**Automatisation locale** : Utilisation de pré-commit hooks (Husky) pour empêcher la validation de code si la suite de tests locaux échoue."
+          ],
+          "trainerNotes": {
+            "oralScript": "Aujourd'hui, l'intelligence artificielle change complètement la donne pour l'écriture de nos tests. Écrire du code d'initialisation répétitif n'a plus aucune valeur ajoutée. En utilisant des prompts de génération ciblés avec GitHub Copilot ou ChatGPT, vous pouvez automatiser la création de votre phase 'Arrange' en quelques secondes. Mais attention : l'IA propose, le développeur dispose. Nous allons apprendre à rédiger des invites de commande d'ingénierie (prompts) ultra-précises pour obtenir un code de test impeccable.",
+            "interactivePrompt": "Qui utilise déjà l'IA générative pour accélérer l'écriture de ses tests unitaires au quotidien ?"
+          },
+          "id": "slide-7-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Intelligence artificielle, automatisation des tâches et accélération technologique"
+        },
+        {
+          "slideNumber": 8,
+          "theme": "Communication d’Influence & Alignement",
+          "title": "Valoriser l'Effort de Test auprès du Business",
+          "visualConcept": "metric",
+          "visualData": {
+            "key": "Impact sur le Time-to-Market",
+            "value": "+35%",
+            "label": "de vélocité de livraison de nouvelles fonctionnalités mesurée sur 12 mois après l'adoption d'une politique rigoureuse de tests unitaires."
+          },
+          "bulletPoints": [
+            "**Traduire la technique en langage business** : Ne parlez pas de 'couverture de code' au Product Owner, parlez de 'réduction du taux d'anomalies bloquantes en production' et de 'stabilité des releases'.",
+            "**Négocier le temps de test** : Inclure l'écriture des tests unitaires directement dans la 'Definition of Done' (DoD) de chaque story. Une tâche n'est pas finie si elle n'est pas testée.",
+            "**Indicateurs clés à piloter (KPIs)** : Suivre la courbe du nombre d'anomalies échappant à la recette pour prouver l'efficacité de la suite de tests unitaires."
+          ],
+          "trainerNotes": {
+            "oralScript": "Pour clore ce module, abordons un point crucial : l'influence. Trop de développeurs se plaignent que leur management refuse de leur laisser le temps d'écrire des tests. Notre responsabilité est de changer de langage. Arrêtez de parler de propreté du code ou d'élégance technique à vos directeurs financiers ou chefs de produit. Parlez-leur de vélocité de livraison et de protection de la marque. Présentez-leur ce chiffre : 35% de fonctionnalités livrées en plus sur un an grâce à la baisse drastique du temps passé à réparer l'existant. C'est ainsi que vous obtiendrez l'alignement et le budget dont vous avez besoin.",
+            "interactivePrompt": "Comment allez-vous reformuler votre prochain besoin de refactoring et de couverture de test à votre Product Owner pour le convaincre ?"
+          },
+          "id": "slide-8-1786901327327",
+          "imageUrl": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900&auto=format&fit=crop&q=80",
+          "imagePrompt": "Leadership d’influence, prise de parole inspirante et négociation"
+        }
+      ],
+      "quiz": [
+        {
+          "question": "Un développeur constate qu'un test unitaire échoue fréquemment lors des builds de la CI le lundi matin, mais réussit toujours sur sa machine locale. Quelle est la cause la plus probable et la solution à y apporter ?",
+          "options": [
+            "Le serveur de CI est trop lent ; il faut augmenter le timeout global des tests.",
+            "Le test dépend d'un service externe de fuseau horaire ou d'une base de données distante partagée ; il faut isoler le test en utilisant un mock.",
+            "Le framework de test est défaillant ; il faut migrer vers une version plus récente.",
+            "Le code de production contient une fuite mémoire ; il faut redémarrer le serveur de CI."
+          ],
+          "correctOptionIndex": 1,
+          "educationalExplanation": "Un test déterministe et isolé doit produire le même résultat quel que soit l'environnement ou le moment de son exécution. Les échecs intermittents (flakiness) liés au réseau, au temps ou à des états partagés sont résolus en isolant hermétiquement le système sous test (SUT) à l'aide de doublures (mocks ou stubs).",
+          "id": "quiz-1-1786901327327"
+        },
+        {
+          "question": "Vous effectuez le refactoring interne d'un algorithme d'optimisation de panier d'achat. Bien que le comportement final pour l'utilisateur reste identique, 15 de vos tests unitaires échouent. Quel est le diagnostic technique de cette suite de tests ?",
+          "options": [
+            "Les tests sont d'excellente qualité car ils réagissent au moindre changement de code.",
+            "Les tests souffrent d'un couplage excessif avec les détails d'implémentation internes au lieu de tester le contrat public de la classe.",
+            "L'algorithme de refactoring est nécessairement erroné, il faut annuler les modifications.",
+            "Les assertions n'utilisent pas le bon framework de comparaison d'objets."
+          ],
+          "correctOptionIndex": 1,
+          "educationalExplanation": "Les bons tests unitaires valident le comportement public et les contrats (les sorties pour des entrées données). S'ils connaissent les variables internes ou les méthodes privées (couplage fort), ils casseront lors de chaque refactoring, décourageant les équipes d'améliorer l'architecture du code.",
+          "id": "quiz-2-1786901327327"
+        },
+        {
+          "question": "Selon le principe de la Pyramide des Tests, pourquoi doit-on privilégier un grand nombre de tests unitaires par rapport aux tests de bout-en-bout (E2E) ?",
+          "options": [
+            "Parce que les tests E2E ne peuvent pas être intégrés dans un pipeline d'intégration continue.",
+            "Parce que les tests unitaires sont plus faciles à écrire sous l'influence de l'intelligence artificielle.",
+            "Parce que les tests unitaires sont extrêmement rapides à s'exécuter, peu coûteux à maintenir et permettent de localiser immédiatement l'emplacement exact d'un bug.",
+            "Parce que les tests E2E sont obsolètes dans l'ingénierie logicielle moderne."
+          ],
+          "correctOptionIndex": 2,
+          "educationalExplanation": "Les tests unitaires s'exécutent en quelques millisecondes et ciblent des fonctions précises, permettant un feedback instantané. Les tests E2E sont lents, fragiles face aux changements d'interfaces graphiques, et rendent l'identification précise de la cause d'une panne complexe.",
+          "id": "quiz-3-1786901327327"
+        },
+        {
+          "question": "Lors d'une revue de code, vous remarquez l'assertion suivante dans un test : 'assertEquals(true, service.calculerRisque() != null)'. Pourquoi cette assertion est-elle considérée comme un anti-pattern ?",
+          "options": [
+            "Parce que le framework n'accepte pas la valeur 'null' dans les assertions.",
+            "Parce que l'assertion teste uniquement la non-nullité de la réponse et ne valide pas la logique ou la conformité du calcul du risque métier.",
+            "Parce qu'il faudrait utiliser un espion (spy) plutôt qu'une assertion de valeur.",
+            "Parce que l'utilisation du mot-clé 'service' indique un couplage avec la base de données."
+          ],
+          "correctOptionIndex": 1,
+          "educationalExplanation": "C'est le piège de la couverture vide. Le test passe au vert car la méthode renvoie 'quelque chose', mais la valeur de retour réelle n'est jamais vérifiée. Les assertions doivent toujours être précises et vérifier la valeur exacte ou l'état attendu pour garantir la qualité du code.",
+          "id": "quiz-4-1786901327327"
+        }
+      ]
+    },
+    {
+      "id": "course-1786873768100",
+      "title": "Masterclass : Comment réaliser des tests unitaires",
+      "tagline": "Comprendre les fondamentaux, maîtriser les pièges et déployer les meilleures pratiques (Beginner)",
+      "description": "Programme de formation intensif conçu pour le niveau Beginner dans le secteur Technologie & Digital.",
+      "topic": "Comment réaliser des tests unitaires",
+      "audienceLevel": "Beginner",
+      "language": "Français",
+      "industry": "Technologie & Digital",
+      "estimatedDuration": 64,
+      "themeId": "slate",
+      "slides": [
+        {
+          "id": "s-1-1786873768100",
+          "slideNumber": 1,
+          "title": "1. Contexte & Enjeux Stratégiques de Comment réaliser des tests unitaires",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Introduction",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "metric",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "metric": "78%",
+            "metricLabel": "des équipes améliorent leur efficacité après cette formation",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #1"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-2-1786873768100",
+          "slideNumber": 2,
+          "title": "2. Les Mécanismes Clés & Vulnérabilités",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "framework",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #2"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-3-1786873768100",
+          "slideNumber": 3,
+          "title": "3. Méthodologie Opérationnelle & Bonnes Pratiques",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "metric",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "metric": "3.5x",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #3"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-4-1786873768100",
+          "slideNumber": 4,
+          "title": "4. Analyse de Cas Concret & Scénario Réel",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "framework",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #4"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-5-1786873768100",
+          "slideNumber": 5,
+          "title": "5. Plan d'Action & Checklist d'Implémentation",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "metric",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #5"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-6-1786873768100",
+          "slideNumber": 6,
+          "title": "Module 6 : Approfondissement & Outils",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "framework",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #6"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        },
+        {
+          "id": "s-7-1786873768100",
+          "slideNumber": 7,
+          "title": "Module 7 : Approfondissement & Outils",
+          "subtitle": "Comprendre et appliquer les réflexes indispensables (Beginner)",
+          "categoryBadge": "Opérationnel",
+          "bullets": [
+            "Identifier les facteurs déterminants et les indicateurs clés de performance liés à Comment réaliser des tests unitaires.",
+            "Mettre en œuvre les procédures recommandées pour limiter les erreurs opérationnelles.",
+            "Sensibiliser les parties prenantes et favoriser une culture d'amélioration continue.",
+            "Intégrer les protocoles de vérification systématique dans le flux de travail quotidien."
+          ],
+          "visualConcept": {
+            "type": "metric",
+            "title": "Focus Clé : Comment réaliser des tests unitaires",
+            "details": [
+              "Pilier 1 : Anticipation et analyse des risques",
+              "Pilier 2 : Automatisation et respect des protocoles",
+              "Pilier 3 : Feedback régulier et partage d’expérience"
+            ],
+            "badge": "Axe Stratégique #7"
+          },
+          "trainerNotes": {
+            "timeMinutes": 8,
+            "keyTalkingPoints": [
+              "Rappeler les enjeux métiers spécifiques à Comment réaliser des tests unitaires.",
+              "Engager l'auditoire en demandant un retour d'expérience vécu.",
+              "Faire le lien avec les objectifs globaux de l'organisation."
+            ],
+            "oralScript": "Bonjour à tous. Abordons maintenant cette étape essentielle de notre module sur \"Comment réaliser des tests unitaires\". Gardez en tête que l'efficacité repose avant tout sur des habitudes simples répétées avec rigueur au quotidien.",
+            "interactivePrompt": "Question pour le groupe : Quelle est votre plus grande difficulté rencontrée sur ce sujet lors du dernier trimestre ?"
+          }
+        }
+      ],
+      "quiz": [
+        {
+          "id": "q-1-1786873768100",
+          "question": "Quelle est la première mesure à adopter pour optimiser Comment réaliser des tests unitaires au quotidien ?",
+          "options": [
+            "Ignorer les alertes initiales et attendre un dysfonctionnement majeur",
+            "Appliquer scrupuleusement les protocoles et vérifier les sources d'information",
+            "Déléguer l'ensemble de la responsabilité sans suivi ni documentation",
+            "Utiliser des outils non homologués pour gagner du temps"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "La rigueur méthodologique et la vérification des sources garantissent la conformité et la sécurité opérationnelle.",
+          "difficulty": "Beginner",
+          "hint": "Pensez à la prévention et au respect des consignes établies."
+        },
+        {
+          "id": "q-2-1786873768100",
+          "question": "En cas d'anomalie ou d'incertitude lors de l'exécution, quelle est la démarche recommandée ?",
+          "options": [
+            "Cacher l'incident pour ne pas perturber l'équipe",
+            "Signaler immédiatement la situation au responsable ou au support dédié",
+            "Redémarrer le poste en espérant que le problème disparaisse",
+            "Transférer le message suspect à tous ses collègues sans avertissement"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Un signalement rapide permet d'endiguer les risques avant qu'ils ne se propagent au reste de l'organisation.",
+          "difficulty": "Intermediate",
+          "hint": "La communication précoce est toujours la clé."
+        }
+      ],
+      "createdAt": "2026-08-16T09:49:28.100Z"
+    },
+    {
       "id": "gen-1786873305831",
       "title": "Maîtriser les Tests Unitaires : Du Code au Filet de Sécurité",
       "tagline": "Écrivez du code robuste, maintenable et serein dès la première ligne",

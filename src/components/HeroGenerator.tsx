@@ -101,7 +101,7 @@ export const HeroGenerator: React.FC<HeroGeneratorProps> = ({ onCourseGenerated,
 
     try {
       const customKey = localStorage.getItem('eduvibe_gemini_api_key') || '';
-      const customModel = localStorage.getItem('eduvibe_gemini_model') || 'gemini-3.7-flash';
+      const customModel = localStorage.getItem('eduvibe_gemini_model') || 'gemini-3.5-flash';
 
       let generatedCourse: CoursePayload | null = null;
       let isFallbackResult = false;

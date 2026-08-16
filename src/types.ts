@@ -27,6 +27,8 @@ export interface Slide {
   categoryBadge?: string;
   visualConcept: VisualConcept;
   trainerNotes: TrainerNotes;
+  imageUrl?: string;
+  imagePrompt?: string;
 }
 
 export interface QuizQuestion {
@@ -120,4 +122,66 @@ export interface TrainingGroup {
   members: GroupMember[];
   courseIds: string[];
   createdAt: string;
+}
+
+export function getSlideBullets(slide?: any): string[] {
+  if (!slide) return [];
+  const list = slide.bullets || slide.bulletPoints || slide.bullet_points || slide.points || slide.keyPoints || slide.items;
+  if (Array.isArray(list) && list.length > 0) {
+    return list.map((item: any) => (typeof item === 'string' ? item : item.point || item.text || item.title || JSON.stringify(item)));
+  }
+  if (typeof list === 'string' && list.trim()) {
+    return list.split('\n').map((l: string) => l.replace(/^[•\-\*\d\.]+\s*/, '').trim()).filter(Boolean);
+  }
+  return [
+    `Assimiler les principes clés et les objectifs prioritaires de ${slide.title || 'ce module'}.`,
+    `Déployer la méthodologie standardisée pas-à-pas avec rigueur.`,
+    `Identifier les pièges à éviter et adopter la posture d'excellence.`,
+    `Valider la bonne exécution à travers des points de contrôle mesurables.`,
+  ];
+}
+
+export function getSlideVisualConcept(slide?: any): VisualConcept {
+  if (!slide) {
+    return {
+      type: 'takeaway',
+      title: 'Concept Clé',
+      badge: 'Point Clé',
+      details: ['Méthode opérationnelle', 'Standards de qualité', 'Validation des acquis'],
+    };
+  }
+  const vc = slide.visualConcept;
+  if (typeof vc === 'string') {
+    return {
+      type: 'takeaway',
+      title: slide.title || 'Concept Clé',
+      badge: slide.categoryBadge || 'Point Clé',
+      details: getSlideBullets(slide).slice(0, 3),
+    };
+  }
+  if (vc && typeof vc === 'object') {
+    const rawDetails = vc.details || vc.takeawayPoints || vc.components || vc.flowSteps || vc.points;
+    const details = Array.isArray(rawDetails) && rawDetails.length > 0
+      ? rawDetails.map((d: any) => (typeof d === 'string' ? d : d.title || d.point || d.text || JSON.stringify(d)))
+      : getSlideBullets(slide).slice(0, 3);
+
+    return {
+      type: vc.type || 'takeaway',
+      title: vc.title || slide.title || 'Concept Clé',
+      badge: vc.badge || slide.categoryBadge || 'Point Clé',
+      details,
+      metric: vc.metric,
+      metricLabel: vc.metricLabel,
+      leftTitle: vc.leftTitle,
+      leftPoints: vc.leftPoints,
+      rightTitle: vc.rightTitle,
+      rightPoints: vc.rightPoints,
+    };
+  }
+  return {
+    type: 'takeaway',
+    title: slide.title || 'Concept Clé',
+    badge: slide.categoryBadge || 'Point Clé',
+    details: getSlideBullets(slide).slice(0, 3),
+  };
 }

@@ -311,8 +311,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {[
-                    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', desc: 'Recommandé • Ultra-rapide & Réflexion' },
-                    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', desc: 'Génération de cours standard' },
+                    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', desc: 'Recommandé • Ultra-rapide & Stable' },
+                    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', desc: 'Haute performance & Précision' },
+                    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Dernière mise à jour Google AI' },
+                    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', desc: 'Raisonnement Avancé' },
                   ].map((m) => (
                     <div
                       key={m.id}

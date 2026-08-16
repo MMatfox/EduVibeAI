@@ -51,6 +51,7 @@ export const DEMO_PRESET_USERS: UserProfile[] = [
 interface AuthAndGroupContextType {
   currentUser: UserProfile | null;
   isAuthenticated: boolean;
+  isAuthLoading: boolean;
   loginWithCredentials: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   registerUser: (userData: Partial<UserProfile>, password?: string) => Promise<{ success: boolean; error?: string }>;
@@ -87,6 +88,10 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return null;
   });
 
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(() => {
+    return isFirebaseConfigured() && !localStorage.getItem('eduvibe_auth_session_user');
+  });
+
   const [groups, setGroups] = useState<TrainingGroup[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(() => {
     return localStorage.getItem('eduvibe_active_group_id');
@@ -118,14 +123,28 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
             refreshGroups();
           }
         })
-        .catch(console.warn);
+        .catch(console.warn)
+        .finally(() => {
+          setIsAuthLoading(false);
+        });
 
       const unsubscribe = subscribeToAuthState((user) => {
         if (user) {
           setCurrentUser(user);
         }
+        setIsAuthLoading(false);
       });
-      return () => unsubscribe();
+
+      const safetyTimer = setTimeout(() => {
+        setIsAuthLoading(false);
+      }, 2500);
+
+      return () => {
+        clearTimeout(safetyTimer);
+        unsubscribe();
+      };
+    } else {
+      setIsAuthLoading(false);
     }
   }, [refreshGroups]);
 
@@ -403,6 +422,7 @@ export const AuthAndGroupProvider: React.FC<{ children: React.ReactNode }> = ({ 
       value={{
         currentUser,
         isAuthenticated: Boolean(currentUser),
+        isAuthLoading,
         loginWithCredentials,
         loginWithGoogle,
         registerUser,

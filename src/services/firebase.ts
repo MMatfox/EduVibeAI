@@ -70,28 +70,7 @@ export { auth, db, googleProvider };
  * Helper to get or create a user profile in Firestore
  */
 export const ensureFirestoreUserProfile = async (fbUser: FirebaseUser): Promise<UserProfile> => {
-  if (!db) {
-    return {
-      id: fbUser.uid,
-      name: fbUser.displayName || 'Utilisateur Google',
-      email: fbUser.email || '',
-      avatar: fbUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      title: 'Formateur & Concepteur',
-      bio: 'Connecté avec un compte Google certifié sur EduVibe AI.',
-      company: 'EduVibe Solutions',
-      skills: ['Formation Interactive', 'Cybersécurité'],
-      joinedAt: new Date().toISOString().slice(0, 10),
-    };
-  }
-
-  const userRef = doc(db, 'users', fbUser.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (userSnap.exists()) {
-    return userSnap.data() as UserProfile;
-  }
-
-  const profile: UserProfile = {
+  const fallbackProfile: UserProfile = {
     id: fbUser.uid,
     name: fbUser.displayName || 'Utilisateur Google',
     email: fbUser.email || '',
@@ -103,13 +82,28 @@ export const ensureFirestoreUserProfile = async (fbUser: FirebaseUser): Promise<
     joinedAt: new Date().toISOString().slice(0, 10),
   };
 
-  try {
-    await setDoc(userRef, profile);
-  } catch (err) {
-    console.warn('Could not persist profile in Firestore (permission/offline):', err);
+  if (!db) {
+    return fallbackProfile;
   }
 
-  return profile;
+  try {
+    const userRef = doc(db, 'users', fbUser.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      return { ...fallbackProfile, ...(userSnap.data() as Partial<UserProfile>) };
+    }
+
+    try {
+      await setDoc(userRef, fallbackProfile);
+    } catch (setErr) {
+      console.warn('Could not persist profile in Firestore (permission/offline):', setErr);
+    }
+  } catch (err) {
+    console.warn('Could not read user profile from Firestore (security rules/offline):', err);
+  }
+
+  return fallbackProfile;
 };
 
 // 1. Google Sign-In with Popup and Automatic Redirect Fallback

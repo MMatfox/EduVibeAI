@@ -14,12 +14,13 @@ import { PRESET_COURSES } from './data/defaultCourses';
 import { exportCourseToPPTX } from './utils/pptxExport';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthAndGroupProvider, useAuthAndGroup } from './context/AuthAndGroupContext';
+import { Loader2 } from 'lucide-react';
 
 const STORAGE_KEY_COURSES = 'eduvibe_courses_v2';
 
 function AppContent() {
   const { t } = useLanguage();
-  const { isAuthenticated, currentUser, selectedViewProfile, setSelectedViewProfile, joinGroupByCode } = useAuthAndGroup();
+  const { isAuthenticated, isAuthLoading, currentUser, selectedViewProfile, setSelectedViewProfile, joinGroupByCode } = useAuthAndGroup();
 
   const [activeTab, setActiveTab] = useState<'generator' | 'slides' | 'classroom' | 'quiz' | 'groups'>('generator');
   
@@ -92,6 +93,16 @@ function AppContent() {
     document.addEventListener('fullscreenchange', handleFsChange);
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
+
+  // If checking authentication state on redirect return, show spinner
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-3">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+        <p className="text-slate-400 text-sm font-medium">Authentification EduVibe AI...</p>
+      </div>
+    );
+  }
 
   // If not logged in, show Auth Gate
   if (!isAuthenticated) {

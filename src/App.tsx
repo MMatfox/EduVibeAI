@@ -5,6 +5,7 @@ import { SlideViewer } from './components/SlideViewer';
 import { VirtualClassroom } from './components/VirtualClassroom';
 import { InteractiveQuiz } from './components/InteractiveQuiz';
 import { GroupsDashboard } from './components/GroupsDashboard';
+import { CoursesDashboard } from './components/CoursesDashboard';
 import { AITutorChat } from './components/AITutorChat';
 import { SettingsModal } from './components/SettingsModal';
 import { ProfileModal } from './components/ProfileModal';
@@ -14,7 +15,7 @@ import { PRESET_COURSES } from './data/defaultCourses';
 import { exportCourseToPPTX } from './utils/pptxExport';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { AuthAndGroupProvider, useAuthAndGroup } from './context/AuthAndGroupContext';
-import { fetchFirestoreCourses, saveFirestoreCourse } from './services/firebase';
+import { fetchFirestoreCourses, saveFirestoreCourse, deleteFirestoreCourse } from './services/firebase';
 import { Loader2 } from 'lucide-react';
 
 const STORAGE_KEY_COURSES = 'eduvibe_courses_v2';
@@ -23,7 +24,7 @@ function AppContent() {
   const { t } = useLanguage();
   const { isAuthenticated, isAuthLoading, currentUser, selectedViewProfile, setSelectedViewProfile, joinGroupByCode } = useAuthAndGroup();
 
-  const [activeTab, setActiveTab] = useState<'generator' | 'slides' | 'classroom' | 'quiz' | 'groups'>('generator');
+  const [activeTab, setActiveTab] = useState<'generator' | 'courses' | 'slides' | 'classroom' | 'quiz' | 'groups'>('generator');
   
   // Persistent courses from localStorage
   const [coursesList, setCoursesList] = useState<CoursePayload[]>(() => {
@@ -202,6 +203,46 @@ function AppContent() {
     } catch {}
   };
 
+  const handleDeleteCourse = (courseId: string) => {
+    if (coursesList.length <= 1) {
+      alert('Vous devez conserver au moins un module.');
+      return;
+    }
+    const remaining = coursesList.filter((c) => c.id !== courseId);
+    setCoursesList(remaining);
+
+    if (currentCourse.id === courseId) {
+      setCurrentCourse(remaining[0]);
+      setCurrentSlideIndex(0);
+    }
+
+    // Delete from Firestore & Backend DB
+    deleteFirestoreCourse(courseId).catch(console.warn);
+    try {
+      fetch(`/api/courses/${courseId}`, {
+        method: 'DELETE',
+      }).catch(console.warn);
+    } catch {}
+  };
+
+  const handleDuplicateCourse = (course: CoursePayload) => {
+    const duplicated: CoursePayload = {
+      ...course,
+      id: `course-copy-${Date.now()}`,
+      title: `[Copie] ${course.title}`,
+      createdAt: new Date().toISOString(),
+    };
+    setCoursesList((prev) => [duplicated, ...prev]);
+    saveFirestoreCourse(duplicated).catch(console.warn);
+    try {
+      fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: duplicated }),
+      }).catch(console.warn);
+    } catch {}
+  };
+
   const handleImportCourses = (imported: CoursePayload[]) => {
     setCoursesList((prev) => [...imported, ...prev]);
     if (imported.length > 0) {
@@ -254,9 +295,44 @@ function AppContent() {
           />
         )}
 
+        {activeTab === 'courses' && (
+          <CoursesDashboard
+            coursesList={coursesList}
+            currentCourse={currentCourse}
+            onSelectCourse={(c) => {
+              setCurrentCourse(c);
+              setCurrentSlideIndex(0);
+            }}
+            onUpdateCourse={handleUpdateCourse}
+            onDeleteCourse={handleDeleteCourse}
+            onDuplicateCourse={handleDuplicateCourse}
+            onCreateNewCourse={() => setActiveTab('generator')}
+            onOpenSlides={(c) => {
+              setCurrentCourse(c);
+              setCurrentSlideIndex(0);
+              setActiveTab('slides');
+            }}
+            onOpenClassroom={(c) => {
+              setCurrentCourse(c);
+              setCurrentSlideIndex(0);
+              setActiveTab('classroom');
+            }}
+            onOpenQuiz={(c) => {
+              setCurrentCourse(c);
+              setActiveTab('quiz');
+            }}
+          />
+        )}
+
         {activeTab === 'slides' && (
           <SlideViewer
             course={currentCourse}
+            coursesList={coursesList}
+            onSelectCourse={(c) => {
+              setCurrentCourse(c);
+              setCurrentSlideIndex(0);
+            }}
+            onOpenCoursesDashboard={() => setActiveTab('courses')}
             onUpdateCourse={handleUpdateCourse}
             onExportPPTX={handleExportPPTX}
             isExporting={isExporting}

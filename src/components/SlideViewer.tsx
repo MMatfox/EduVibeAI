@@ -26,7 +26,9 @@ import {
   ArrowUp,
   ArrowDown,
   Tv,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ChevronDown,
+  BookOpen
 } from 'lucide-react';
 import { CoursePayload, Slide, getSlideBullets, getSlideVisualConcept } from '../types';
 import { COURSE_THEMES } from '../data/defaultCourses';
@@ -37,6 +39,9 @@ import { audioEffects } from '../utils/audioEffects';
 
 interface SlideViewerProps {
   course: CoursePayload;
+  coursesList?: CoursePayload[];
+  onSelectCourse?: (course: CoursePayload) => void;
+  onOpenCoursesDashboard?: () => void;
   onUpdateCourse: (updatedCourse: CoursePayload) => void;
   onExportPPTX: () => void;
   isExporting: boolean;
@@ -46,6 +51,9 @@ interface SlideViewerProps {
 
 export const SlideViewer: React.FC<SlideViewerProps> = ({
   course,
+  coursesList = [],
+  onSelectCourse,
+  onOpenCoursesDashboard,
   onUpdateCourse,
   onExportPPTX,
   isExporting,
@@ -53,6 +61,7 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
   setCurrentSlideIndex,
 }) => {
   const { language, t } = useLanguage();
+  const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState<boolean>(false);
   const [showTrainerNotes, setShowTrainerNotes] = useState<boolean>(true);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
@@ -354,13 +363,70 @@ export const SlideViewer: React.FC<SlideViewerProps> = ({
             <span className="font-semibold">{slides.length}</span>
           </div>
 
-          <div className="hidden sm:block">
-            <h2 className="text-sm font-bold text-slate-900 line-clamp-1 max-w-sm">
-              {course.title}
-            </h2>
-            <p className="text-[11px] text-slate-500">
-              {currentSlide.categoryBadge || 'Slide'}
-            </p>
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-1 max-w-xs sm:max-w-sm" title={course.title}>
+                  {course.title}
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  {currentSlide.categoryBadge || 'Slide'}
+                </p>
+              </div>
+
+              {coursesList.length > 1 && (
+                <button
+                  onClick={() => setIsCourseDropdownOpen(!isCourseDropdownOpen)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition cursor-pointer"
+                  title={t('courses.switcherTitle')}
+                >
+                  <span>{t('courses.switcher')} ({coursesList.length})</span>
+                  <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${isCourseDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+              )}
+            </div>
+
+            {isCourseDropdownOpen && (
+              <div className="absolute left-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
+                  {t('courses.switcherTitle')}
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-0.5 px-1">
+                  {coursesList.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => {
+                        if (onSelectCourse) onSelectCourse(c);
+                        setIsCourseDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-between ${
+                        c.id === course.id
+                          ? 'bg-indigo-50 text-indigo-700 font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 font-medium'
+                      }`}
+                    >
+                      <span className="truncate pr-2">{c.title}</span>
+                      {c.id === course.id && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+
+                {onOpenCoursesDashboard && (
+                  <div className="border-t border-slate-100 mt-1 pt-1 px-1">
+                    <button
+                      onClick={() => {
+                        onOpenCoursesDashboard();
+                        setIsCourseDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-xl text-xs text-indigo-600 font-bold hover:bg-indigo-50 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>{t('courses.manageAll')}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

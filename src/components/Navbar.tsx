@@ -15,15 +15,16 @@ import {
   Menu,
   X,
   Check,
-  Globe
+  Globe,
+  BookOpen
 } from 'lucide-react';
 import { CoursePayload } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuthAndGroup } from '../context/AuthAndGroupContext';
 
 interface NavbarProps {
-  activeTab: 'generator' | 'slides' | 'classroom' | 'quiz' | 'groups';
-  setActiveTab: (tab: 'generator' | 'slides' | 'classroom' | 'quiz' | 'groups') => void;
+  activeTab: 'generator' | 'courses' | 'slides' | 'classroom' | 'quiz' | 'groups';
+  setActiveTab: (tab: 'generator' | 'courses' | 'slides' | 'classroom' | 'quiz' | 'groups') => void;
   currentCourse: CoursePayload;
   coursesList: CoursePayload[];
   onSelectCourse: (course: CoursePayload) => void;
@@ -43,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   currentCourse,
+  coursesList,
   onExportPPTX,
   isExporting,
   onToggleTutor,
@@ -81,9 +83,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { id: 'generator' as const, label: t('nav.generator'), icon: Sparkles },
-    { id: 'slides' as const, label: t('nav.slides'), icon: Presentation, badge: currentCourse.slides.length },
+    { id: 'courses' as const, label: t('nav.courses'), icon: BookOpen, badge: coursesList.length },
+    { id: 'slides' as const, label: t('nav.slides'), icon: Presentation, badge: currentCourse?.slides?.length },
     { id: 'classroom' as const, label: t('nav.classroom'), icon: Video, live: true },
-    { id: 'quiz' as const, label: t('nav.quiz'), icon: HelpCircle, badge: currentCourse.quiz.length },
+    { id: 'quiz' as const, label: t('nav.quiz'), icon: HelpCircle, badge: currentCourse?.quiz?.length },
     { id: 'groups' as const, label: t('nav.groups'), icon: Users, badge: userGroups.length },
   ];
 

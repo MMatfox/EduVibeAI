@@ -380,3 +380,12 @@ export const saveFirestoreCourse = async (course: CoursePayload): Promise<void> 
     console.warn('Failed to save course to Firestore:', err);
   }
 };
+
+export const deleteFirestoreCourse = async (courseId: string): Promise<void> => {
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, 'courses', courseId));
+  } catch (err) {
+    console.warn('Failed to delete course from Firestore:', err);
+  }
+};

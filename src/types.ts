@@ -59,6 +59,7 @@ export interface CourseTheme {
 export interface CoursePayload {
   id: string;
   title: string;
+  subtitle?: string;
   tagline: string;
   description: string;
   topic: string;
